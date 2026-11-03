@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blocket Master ERP - Concrete Block Manufacturing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-amber-500 p-2 rounded-lg text-slate-900 font-bold text-xl">🧱</div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight">Blocket Master ERP</h1>
+                    <p class="text-xs text-slate-400">Concrete Block Manufacturing Suite</p>
+                </div>
+            </div>
+            <!-- Navigation Tabs -->
+            <nav class="flex flex-wrap gap-1 bg-slate-800 p-1 rounded-xl text-xs sm:text-sm">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="px-3 py-1.5 rounded-lg font-medium bg-amber-500 text-slate-900 transition">Dashboard</button>
+                <button onclick="switchTab('production')" id="nav-production" class="px-3 py-1.5 rounded-lg font-medium text-slate-300 hover:text-white transition">Production</button>
+                <button onclick="switchTab('sales')" id="nav-sales" class="px-3 py-1.5 rounded-lg font-medium text-slate-300 hover:text-white transition">Sales</button>
+                <button onclick="switchTab('purchases')" id="nav-purchases" class="px-3 py-1.5 rounded-lg font-medium text-slate-300 hover:text-white transition">Procurement</button>
+                <button onclick="switchTab('expenses')" id="nav-expenses" class="px-3 py-1.5 rounded-lg font-medium text-slate-300 hover:text-white transition">Expenses</button>
+                <button onclick="switchTab('financials')" id="nav-financials" class="px-3 py-1.5 rounded-lg font-medium text-slate-300 hover:text-white transition">Financials</button>
+                <button onclick="switchTab('reports')" id="nav-reports" class="px-3 py-1.5 rounded-lg font-medium text-slate-300 hover:text-white transition">Reports</button>
+                <button onclick="switchTab('database')" id="nav-database" class="px-3 py-1.5 rounded-lg font-medium text-slate-300 hover:text-white transition">Database</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main App Container -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full space-y-6">
+
+        <!-- DASHBOARD VIEW -->
+        <section id="view-dashboard" class="space-y-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Sales Revenue</p>
+                    <h3 id="dash-revenue" class="text-2xl font-bold text-slate-900 mt-1">$0.00</h3>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Net Profit</p>
+                    <h3 id="dash-profit" class="text-2xl font-bold text-emerald-600 mt-1">$0.00</h3>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Blocks in Stock</p>
+                    <h3 id="dash-blocks" class="text-2xl font-bold text-slate-900 mt-1">0 units</h3>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Sync Status</p>
+                    <div class="flex items-center gap-2 mt-2">
+                        <span class="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></span>
+                        <span class="text-sm font-medium text-emerald-700">Offline Ready (IndexedDB)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stock Inventory Overview -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-bold text-slate-900">Current Blocket Inventory (Available = Initial + Production - Sales)</h2>
+                    <button onclick="openBaseStockModal()" class="text-xs bg-slate-100 hover:bg-slate-200 font-semibold px-3 py-1.5 rounded-lg text-slate-700 transition">Adjust Base Stock</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <span class="text-sm font-medium text-slate-500">10cm Blocks</span>
+                        <h4 id="stock-10cm" class="text-3xl font-bold text-slate-900 mt-1">0</h4>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <span class="text-sm font-medium text-slate-500">15cm Blocks</span>
+                        <h4 id="stock-15cm" class="text-3xl font-bold text-slate-900 mt-1">0</h4>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <span class="text-sm font-medium text-slate-500">20cm Blocks</span>
+                        <h4 id="stock-20cm" class="text-3xl font-bold text-slate-900 mt-1">0</h4>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PRODUCTION VIEW -->
+        <section id="view-production" class="hidden space-y-6">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-bold text-slate-900">Production Batches</h2>
+                <button onclick="openModal('productionModal')" class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-4 py-2 rounded-xl text-sm transition shadow-sm">+ Log Production</button>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-slate-100 text-slate-700 uppercase text-xs">
+                            <tr>
+                                <th class="p-3">Date</th>
+                                <th class="p-3">Size</th>
+                                <th class="p-3">Gross Yield</th>
+                                <th class="p-3">Breakage</th>
+                                <th class="p-3">Net Produced</th>
+                                <th class="p-3">Labor Cost</th>
+                                <th class="p-3 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="production-table-body" class="divide-y divide-slate-200">
+                            <tr><td colspan="7" class="p-4 text-center text-slate-400">No production logs recorded yet.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- SALES VIEW -->
+        <section id="view-sales" class="hidden space-y-6">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-bold text-slate-900">Sales & Invoices</h2>
+                <button onclick="openModal('saleModal')" class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-4 py-2 rounded-xl text-sm transition shadow-sm">+ New Sale</button>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-slate-100 text-slate-700 uppercase text-xs">
+                            <tr>
+                                <th class="p-3">Date</th>
+                                <th class="p-3">Customer</th>
+                                <th class="p-3">Block Size</th>
+                                <th class="p-3">Qty</th>
+                                <th class="p-3">Unit Price</th>
+                                <th class="p-3">Total Amount</th>
+                                <th class="p-3 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sales-table-body" class="divide-y divide-slate-200">
+                            <tr><td colspan="7" class="p-4 text-center text-slate-400">No sales recorded yet.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- PURCHASES VIEW -->
+        <section id="view-purchases" class="hidden space-y-6">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-bold text-slate-900">Raw Material Procurement</h2>
+                <button onclick="openModal('purchaseModal')" class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-4 py-2 rounded-xl text-sm transition shadow-sm">+ Log Purchase</button>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-slate-100 text-slate-700 uppercase text-xs">
+                            <tr>
+                                <th class="p-3">Date</th>
+                                <th class="p-3">Material</th>
+                                <th class="p-3">Quantity</th>
+                                <th class="p-3">Supplier</th>
+                                <th class="p-3">Total Cost</th>
+                                <th class="p-3 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="purchases-table-body" class="divide-y divide-slate-200">
+                            <tr><td colspan="6" class="p-4 text-center text-slate-400">No raw material purchases recorded.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- EXPENSES VIEW -->
+        <section id="view-expenses" class="hidden space-y-6">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-bold text-slate-900">Operational Expenses</h2>
+                <button onclick="openModal('expenseModal')" class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-4 py-2 rounded-xl text-sm transition shadow-sm">+ Add Expense</button>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-slate-100 text-slate-700 uppercase text-xs">
+                            <tr>
+                                <th class="p-3">Date</th>
+                                <th class="p-3">Category</th>
+                                <th class="p-3">Notes</th>
+                                <th class="p-3">Amount</th>
+                                <th class="p-3 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="expenses-table-body" class="divide-y divide-slate-200">
+                            <tr><td colspan="5" class="p-4 text-center text-slate-400">No operational expenses recorded.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- FINANCIALS VIEW -->
+        <section id="view-financials" class="hidden space-y-6">
+            <h2 class="text-xl font-bold text-slate-900">Financial Statement & Income Summary</h2>
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                <div class="flex justify-between border-b pb-3">
+                    <span class="font-medium text-slate-600">Gross Sales Revenue</span>
+                    <span id="fin-revenue" class="font-bold text-slate-900">$0.00</span>
+                </div>
+                <div class="flex justify-between border-b pb-3">
+                    <span class="font-medium text-slate-600">Direct Production Labor</span>
+                    <span id="fin-labor" class="font-bold text-rose-600">$0.00</span>
+                </div>
+                <div class="flex justify-between border-b pb-3">
+                    <span class="font-medium text-slate-600">Raw Material Purchases</span>
+                    <span id="fin-purchases" class="font-bold text-rose-600">$0.00</span>
+                </div>
+                <div class="flex justify-between border-b pb-3">
+                    <span class="font-medium text-slate-600">Operational Overhead Expenses</span>
+                    <span id="fin-expenses" class="font-bold text-rose-600">$0.00</span>
+                </div>
+                <div class="flex justify-between pt-2 text-lg">
+                    <span class="font-bold text-slate-900">Net Profit</span>
+                    <span id="fin-net" class="font-extrabold text-emerald-600">$0.00</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- REPORTS VIEW -->
+        <section id="view-reports" class="hidden space-y-6">
+            <h2 class="text-xl font-bold text-slate-900">Reports & CSV Export</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 space-y-3">
+                    <h3 class="font-bold text-slate-800">Production Ledger Export</h3>
+                    <p class="text-xs text-slate-500">Download all production batches and yields in CSV format.</p>
+                    <button onclick="exportCSV('production')" class="bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-slate-800 transition">Export Production CSV</button>
+                </div>
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 space-y-3">
+                    <h3 class="font-bold text-slate-800">Sales Invoices Export</h3>
+                    <p class="text-xs text-slate-500">Download complete sales and revenue logs.</p>
+                    <button onclick="exportCSV('sales')" class="bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-slate-800 transition">Export Sales CSV</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- DATABASE VIEW -->
+        <section id="view-database" class="hidden space-y-6">
+            <h2 class="text-xl font-bold text-slate-900">Database & Storage Management</h2>
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 space-y-4">
+                <p class="text-sm text-slate-600">All data is stored locally in your browser using IndexedDB. You can reset or clear state at any time.</p>
+                <div class="flex gap-4">
+                    <button onclick="clearAllData()" class="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition">Clear All Data & Reset to Zero</button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Simple Generic Modal -->
+    <div id="genericModal" class="fixed inset-0 bg-slate-900/50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
+            <h3 id="modalTitle" class="text-lg font-bold text-slate-900">Modal Title</h3>
+            <div id="modalContent"></div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeModal()" class="px-4 py-2 rounded-xl text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium">Cancel</button>
+                <button id="modalSaveBtn" onclick="saveModalData()" class="px-4 py-2 rounded-xl text-sm bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        let db;
+        let currentEditingStore = null;
+        let currentEditingId = null;
+        let baseStock = { '10cm': 0, '15cm': 0, '20cm': 0 };
+
+        // Initialize IndexedDB
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open("BlocketMasterDB", 1);
+                request.onerror = e => reject(e.target.error);
+                request.onupgradeneeded = e => {
+                    const dbInstance = e.target.result;
+                    ['blockets', 'sales', 'purchases', 'expenses', 'settings'].forEach(store => {
+                        if (!dbInstance.objectStoreNames.contains(store)) {
+                            dbInstance.createObjectStore(store, { keyPath: 'id', autoIncrement: true });
+                        }
+                    });
+                };
+                request.onsuccess = e => {
+                    db = e.target.result;
+                    loadAllData();
+                    resolve(db);
+                };
+            });
+        }
+
+        function switchTab(tabId) {
+            ['dashboard', 'production', 'sales', 'purchases', 'expenses', 'financials', 'reports', 'database'].forEach(t => {
+                document.getElementById(`view-${t}`).classList.add('hidden');
+                document.getElementById(`nav-${t}`).className = "px-3 py-1.5 rounded-lg font-medium text-slate-300 hover:text-white transition";
+            });
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+            document.getElementById(`nav-${tabId}`).className = "px-3 py-1.5 rounded-lg font-medium bg-amber-500 text-slate-900 transition";
+        }
+
+        function openModal(type) {
+            currentEditingId = null;
+            currentEditingStore = type;
+            const title = document.getElementById('modalTitle');
+            const content = document.getElementById('modalContent');
+            
+            if (type === 'productionModal') {
+                title.innerText = "Log Production Batch";
+                content.innerHTML = `
+                    <div class="space-y-3">
+                        <div><label class="text-xs font-semibold text-slate-600">Date</label><input type="date" id="p-date" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${new Date().toISOString().split('T')[0]}"></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Block Size</label><select id="p-size" class="w-full mt-1 p-2 border rounded-xl text-sm"><option value="10cm">10cm</option><option value="15cm">15cm</option><option value="20cm">20cm</option></select></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Gross Yield</label><input type="number" id="p-gross" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="0"></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Breakage</label><input type="number" id="p-break" class="w-full mt-1 p-2 border rounded-xl text-sm" value="0"></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Labor Cost ($)</label><input type="number" id="p-labor" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="0.00"></div>
+                    </div>
+                `;
+            } else if (type === 'saleModal') {
+                title.innerText = "New Sale Invoice";
+                content.innerHTML = `
+                    <div class="space-y-3">
+                        <div><label class="text-xs font-semibold text-slate-600">Date</label><input type="date" id="s-date" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${new Date().toISOString().split('T')[0]}"></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Customer Name</label><input type="text" id="s-customer" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="Customer / Contractor"></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Block Size</label><select id="s-size" class="w-full mt-1 p-2 border rounded-xl text-sm"><option value="10cm">10cm</option><option value="15cm">15cm</option><option value="20cm">20cm</option></select></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Quantity Sold</label><input type="number" id="s-qty" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="0"></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Unit Price ($)</label><input type="number" id="s-price" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="0.00"></div>
+                    </div>
+                `;
+            } else if (type === 'purchaseModal') {
+                title.innerText = "Log Raw Material Purchase";
+                content.innerHTML = `
+                    <div class="space-y-3">
+                        <div><label class="text-xs font-semibold text-slate-600">Date</label><input type="date" id="pur-date" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${new Date().toISOString().split('T')[0]}"></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Material Type</label><select id="pur-material" class="w-full mt-1 p-2 border rounded-xl text-sm"><option value="Cement">Cement</option><option value="Pumice">Pumice</option><option value="Sand">Sand</option></select></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Quantity</label><input type="number" id="pur-qty" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="0"></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Supplier</label><input type="text" id="pur-supp" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="Supplier Name"></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Total Cost ($)</label><input type="number" id="pur-cost" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="0.00"></div>
+                    </div>
+                `;
+            } else if (type === 'expenseModal') {
+                title.innerText = "Add Operational Expense";
+                content.innerHTML = `
+                    <div class="space-y-3">
+                        <div><label class="text-xs font-semibold text-slate-600">Date</label><input type="date" id="e-date" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${new Date().toISOString().split('T')[0]}"></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Category</label><input type="text" id="e-cat" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="Fuel, Maintenance, Transport"></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Notes</label><input type="text" id="e-notes" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="Description"></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Amount ($)</label><input type="number" id="e-amt" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="0.00"></div>
+                    </div>
+                `;
+            }
+            document.getElementById('genericModal').classList.remove('hidden');
+            document.getElementById('genericModal').classList.add('flex');
+        }
+
+        function closeModal() {
+            document.getElementById('genericModal').classList.remove('flex');
+            document.getElementById('genericModal').classList.add('hidden');
+        }
+
+        function saveModalData() {
+            const tx = db.transaction(currentEditingStore, 'readwrite');
+            const store = tx.objectStore(currentEditingStore);
+            let obj = {};
+
+            if (currentEditingStore === 'productionModal') {
+                obj = {
+                    date: document.getElementById('p-date').value,
+                    size: document.getElementById('p-size').value,
+                    gross: Number(document.getElementById('p-gross').value),
+                    breakage: Number(document.getElementById('p-break').value),
+                    labor: Number(document.getElementById('p-labor').value),
+                    net: Number(document.getElementById('p-gross').value) - Number(document.getElementById('p-break').value)
+                };
+                currentEditingStore = 'blockets';
+            } else if (currentEditingStore === 'saleModal') {
+                obj = {
+                    date: document.getElementById('s-date').value,
+                    customer: document.getElementById('s-customer').value,
+                    size: document.getElementById('s-size').value,
+                    qty: Number(document.getElementById('s-qty').value),
+                    price: Number(document.getElementById('s-price').value),
+                    total: Number(document.getElementById('s-qty').value) * Number(document.getElementById('s-price').value)
+                };
+                currentEditingStore = 'sales';
+            } else if (currentEditingStore === 'purchaseModal') {
+                obj = {
+                    date: document.getElementById('pur-date').value,
+                    material: document.getElementById('pur-material').value,
+                    qty: Number(document.getElementById('pur-qty').value),
+                    supplier: document.getElementById('pur-supp').value,
+                    cost: Number(document.getElementById('pur-cost').value)
+                };
+                currentEditingStore = 'purchases';
+            } else if (currentEditingStore === 'expenseModal') {
+                obj = {
+                    date: document.getElementById('e-date').value,
+                    category: document.getElementById('e-cat').value,
+                    notes: document.getElementById('e-notes').value,
+                    amount: Number(document.getElementById('e-amt').value)
+                };
+                currentEditingStore = 'expenses';
+            }
+
+            if (currentEditingId) {
+                obj.id = currentEditingId;
+                store.put(obj);
+            } else {
+                store.add(obj);
+            }
+
+            tx.oncomplete = () => {
+                closeModal();
+                loadAllData();
+            };
+        }
+
+        function openBaseStockModal() {
+            currentEditingStore = 'settings';
+            currentEditingId = 'baseStock';
+            const title = document.getElementById('modalTitle');
+            const content = document.getElementById('modalContent');
+            title.innerText = "Adjust Initial Base Stock";
+            content.innerHTML = `
+                <div class="space-y-3">
+                    <div><label class="text-xs font-semibold text-slate-600">10cm Initial Stock</label><input type="number" id="bs-10" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${baseStock['10cm']}"></div>
+                    <div><label class="text-xs font-semibold text-slate-600">15cm Initial Stock</label><input type="number" id="bs-15" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${baseStock['15cm']}"></div>
+                    <div><label class="text-xs font-semibold text-slate-600">20cm Initial Stock</label><input type="number" id="bs-20" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${baseStock['20cm']}"></div>
+                </div>
+            `;
+            document.getElementById('genericModal').classList.remove('hidden');
+            document.getElementById('genericModal').classList.add('flex');
+            
+            // Override save action for base stock
+            document.getElementById('modalSaveBtn').onclick = () => {
+                baseStock['10cm'] = Number(document.getElementById('bs-10').value);
+                baseStock['15cm'] = Number(document.getElementById('bs-15').value);
+                baseStock['20cm'] = Number(document.getElementById('bs-20').value);
+                
+                const tx = db.transaction('settings', 'readwrite');
+                tx.objectStore('settings').put({ id: 'baseStock', data: baseStock });
+                tx.oncomplete = () => {
+                    closeModal();
+                    loadAllData();
+                    // Restore default save button action
+                    document.getElementById('modalSaveBtn').onclick = saveModalData;
+                };
+            };
+        }
+
+        function deleteRecord(storeName, id) {
+            if (!confirm("Are you sure you want to delete this record?")) return;
+            const tx = db.transaction(storeName, 'readwrite');
+            tx.objectStore(storeName).delete(Number(id));
+            tx.oncomplete = () => loadAllData();
+        }
+
+        function clearAllData() {
+            if (!confirm("Are you sure you want to clear all data and reset everything to 0?")) return;
+            const stores = ['blockets', 'sales', 'purchases', 'expenses', 'settings'];
+            const tx = db.transaction(stores, 'readwrite');
+            stores.forEach(s => tx.objectStore(s).clear());
+            tx.oncomplete = () => {
+                baseStock = { '10cm': 0, '15cm': 0, '20cm': 0 };
+                loadAllData();
+                alert("All data cleared successfully.");
+            };
+        }
+
+        function loadAllData() {
+            // Load Settings / Base Stock
+            const tx = db.transaction(['blockets', 'sales', 'purchases', 'expenses', 'settings'], 'readonly');
+            
+            // Get settings
+            tx.objectStore('settings').get('baseStock').onsuccess = (e) => {
+                if (e.target.result) baseStock = e.target.result.data;
+            };
+
+            let allBlockets = [], allSales = [], allPurchases = [], allExpenses = [];
+
+            tx.objectStore('blockets').getAll().onsuccess = (e) => { allBlockets = e.target.result; };
+            tx.objectStore('sales').getAll().onsuccess = (e) => { allSales = e.target.result; };
+            tx.objectStore('purchases').getAll().onsuccess = (e) => { allPurchases = e.target.result; };
+            tx.objectStore('expenses').getAll().onsuccess = (e) => { allExpenses = e.target.result; };
+
+            tx.oncomplete = () => {
+                renderDashboard(allBlockets, allSales, allPurchases, allExpenses);
+                renderProductionTable(allBlockets);
+                renderSalesTable(allSales);
+                renderPurchasesTable(allPurchases);
+                renderExpensesTable(allExpenses);
+                renderFinancials(allSales, allBlockets, allPurchases, allExpenses);
+            };
+        }
+
+        function renderDashboard(blockets, sales, purchases, expenses) {
+            let prod10 = 0, prod15 = 0, prod20 = 0;
+            blockets.forEach(b => {
+                if (b.size === '10cm') prod10 += (b.net || 0);
+                if (b.size === '15cm') prod15 += (b.net || 0);
+                if (b.size === '20cm') prod20 += (b.net || 0);
+            });
+
+            let sold10 = 0, sold15 = 0, sold20 = 0;
+            sales.forEach(s => {
+                if (s.size === '10cm') sold10 += (s.qty || 0);
+                if (s.size === '15cm') sold15 += (s.qty || 0);
+                if (s.size === '20cm') sold20 += (s.qty || 0);
+            });
+
+            const stock10 = (baseStock['10cm'] || 0) + prod10 - sold10;
+            const stock15 = (baseStock['15cm'] || 0) + prod15 - sold15;
+            const stock20 = (baseStock['20cm'] || 0) + prod20 - sold20;
+
+            document.getElementById('stock-10cm').innerText = stock10;
+            document.getElementById('stock-15cm').innerText = stock15;
+            document.getElementById('stock-20cm').innerText = stock10 ? stock20 : 0; // Quick clamp
+            document.getElementById('dash-blocks').innerText = (stock10 + stock15 + stock20) + " units";
+
+            let totalRev = 0;
+            sales.forEach(s => totalRev += (s.total || 0));
+            document.getElementById('dash-revenue').innerText = `$${totalRev.toFixed(2)}`;
+        }
+
+        function renderProductionTable(data) {
+            const tbody = document.getElementById('production-table-body');
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">No production logs recorded yet.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = data.map(item => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3">${item.date}</td>
+                    <td class="p-3 font-semibold">${item.size}</td>
+                    <td class="p-3">${item.gross}</td>
+                    <td class="p-3">${item.breakage}</td>
+                    <td class="p-3 font-bold text-emerald-600">${item.net}</td>
+                    <td class="p-3">$${(item.labor || 0).toFixed(2)}</td>
+                    <td class="p-3 text-right">
+                        <button onclick="deleteRecord('blockets', ${item.id})" class="text-rose-600 hover:text-rose-800 text-xs font-semibold">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderSalesTable(data) {
+            const tbody = document.getElementById('sales-table-body');
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">No sales recorded yet.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = data.map(item => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3">${item.date}</td>
+                    <td class="p-3 font-medium text-slate-900">${item.customer}</td>
+                    <td class="p-3">${item.size}</td>
+                    <td class="p-3">${item.qty}</td>
+                    <td class="p-3">$${(item.price || 0).toFixed(2)}</td>
+                    <td class="p-3 font-bold text-slate-900">$${(item.total || 0).toFixed(2)}</td>
+                    <td class="p-3 text-right">
+                        <button onclick="deleteRecord('sales', ${item.id})" class="text-rose-600 hover:text-rose-800 text-xs font-semibold">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderPurchasesTable(data) {
+            const tbody = document.getElementById('purchases-table-body');
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">No raw material purchases recorded.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = data.map(item => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3">${item.date}</td>
+                    <td class="p-3 font-medium text-slate-900">${item.material}</td>
+                    <td class="p-3">${item.qty}</td>
+                    <td class="p-3">${item.supplier}</td>
+                    <td class="p-3 font-bold text-slate-900">$${(item.cost || 0).toFixed(2)}</td>
+                    <td class="p-3 text-right">
+                        <button onclick="deleteRecord('purchases', ${item.id})" class="text-rose-600 hover:text-rose-800 text-xs font-semibold">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderExpensesTable(data) {
+            const tbody = document.getElementById('expenses-table-body');
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">No operational expenses recorded.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = data.map(item => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3">${item.date}</td>
+                    <td class="p-3 font-medium text-slate-900">${item.category}</td>
+                    <td class="p-3">${item.notes}</td>
+                    <td class="p-3 font-bold text-slate-900">$${(item.amount || 0).toFixed(2)}</td>
+                    <td class="p-3 text-right">
+                        <button onclick="deleteRecord('expenses', ${item.id})" class="text-rose-600 hover:text-rose-800 text-xs font-semibold">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderFinancials(sales, blockets, purchases, expenses) {
+            let rev = 0, labor = 0, purCost = 0, expCost = 0;
+            sales.forEach(s => rev += (s.total || 0));
+            blockets.forEach(b => labor += (b.labor || 0));
+            purchases.forEach(p => purCost += (p.cost || 0));
+            expenses.forEach(e => expCost += (e.amount || 0));
+
+            const net = rev - (labor + purCost + expCost);
+
+            document.getElementById('fin-revenue').innerText = `$${rev.toFixed(2)}`;
+            document.getElementById('fin-labor').innerText = `$${labor.toFixed(2)}`;
+            document.getElementById('fin-purchases').innerText = `$${purCost.toFixed(2)}`;
+            document.getElementById('fin-expenses').innerText = `$${expCost.toFixed(2)}`;
+            document.getElementById('fin-net').innerText = `$${net.toFixed(2)}`;
+            document.getElementById('dash-profit').innerText = `$${net.toFixed(2)}`;
+        }
+
+        function exportCSV(type) {
+            const tx = db.transaction(type === 'production' ? 'blockets' : 'sales', 'readonly');
+            tx.objectStore(type === 'production' ? 'blockets' : 'sales').getAll().onsuccess = (e) => {
+                const data = e.target.result;
+                if (!data.length) { alert("No data to export."); return; }
+                let csv = "data:text/csv;charset=utf-8," + Object.keys(data[0]).join(",") + "\n";
+                data.forEach(row => {
+                    csv += Object.values(row).join(",") + "\n";
+                });
+                const encodedUri = encodeURI(csv);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", `${type}_report.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+        }
+
+        // Run Init on Load
+        window.onload = initDB;
+    </script>
+</body>
+</html>
