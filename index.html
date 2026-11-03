@@ -361,61 +361,71 @@
         }
 
         function saveModalData() {
-            const tx = db.transaction(currentEditingStore, 'readwrite');
-            const store = tx.objectStore(currentEditingStore);
-            let obj = {};
+    // 1. Map the modal name to the correct database store name FIRST
+    let storeName = currentEditingStore;
+    if (storeName === 'productionModal') storeName = 'blockets';
+    if (storeName === 'saleModal') storeName = 'sales';
+    if (storeName === 'purchaseModal') storeName = 'purchases';
+    if (storeName === 'expenseModal') storeName = 'expenses';
 
-            if (currentEditingStore === 'productionModal') {
-                obj = {
-                    date: document.getElementById('p-date').value,
-                    size: document.getElementById('p-size').value,
-                    gross: Number(document.getElementById('p-gross').value),
-                    breakage: Number(document.getElementById('p-break').value),
-                    labor: Number(document.getElementById('p-labor').value),
-                    net: Number(document.getElementById('p-gross').value) - Number(document.getElementById('p-break').value)
-                };
-                currentEditingStore = 'blockets';
-            } else if (currentEditingStore === 'saleModal') {
-                obj = {
-                    date: document.getElementById('s-date').value,
-                    customer: document.getElementById('s-customer').value,
-                    size: document.getElementById('s-size').value,
-                    qty: Number(document.getElementById('s-qty').value),
-                    price: Number(document.getElementById('s-price').value),
-                    total: Number(document.getElementById('s-qty').value) * Number(document.getElementById('s-price').value)
-                };
-                currentEditingStore = 'sales';
-            } else if (currentEditingStore === 'purchaseModal') {
-                obj = {
-                    date: document.getElementById('pur-date').value,
-                    material: document.getElementById('pur-material').value,
-                    qty: Number(document.getElementById('pur-qty').value),
-                    supplier: document.getElementById('pur-supp').value,
-                    cost: Number(document.getElementById('pur-cost').value)
-                };
-                currentEditingStore = 'purchases';
-            } else if (currentEditingStore === 'expenseModal') {
-                obj = {
-                    date: document.getElementById('e-date').value,
-                    category: document.getElementById('e-cat').value,
-                    notes: document.getElementById('e-notes').value,
-                    amount: Number(document.getElementById('e-amt').value)
-                };
-                currentEditingStore = 'expenses';
-            }
+    // 2. Now open the transaction using the correct store name
+    const tx = db.transaction(storeName, 'readwrite');
+    const store = tx.objectStore(storeName);
+    let obj = {};
 
-            if (currentEditingId) {
-                obj.id = currentEditingId;
-                store.put(obj);
-            } else {
-                store.add(obj);
-            }
+    // 3. Extract form data based on what modal is open
+    if (currentEditingStore === 'productionModal') {
+        obj = {
+            date: document.getElementById('p-date').value,
+            size: document.getElementById('p-size').value,
+            gross: Number(document.getElementById('p-gross').value),
+            breakage: Number(document.getElementById('p-break').value),
+            labor: Number(document.getElementById('p-labor').value),
+            net: Number(document.getElementById('p-gross').value) - Number(document.getElementById('p-break').value)
+        };
+    } else if (currentEditingStore === 'saleModal') {
+        obj = {
+            date: document.getElementById('s-date').value,
+            customer: document.getElementById('s-customer').value,
+            size: document.getElementById('s-size').value,
+            qty: Number(document.getElementById('s-qty').value),
+            price: Number(document.getElementById('s-price').value),
+            total: Number(document.getElementById('s-qty').value) * Number(document.getElementById('s-price').value)
+        };
+    } else if (currentEditingStore === 'purchaseModal') {
+        obj = {
+            date: document.getElementById('pur-date').value,
+            material: document.getElementById('pur-material').value,
+            qty: Number(document.getElementById('pur-qty').value),
+            supplier: document.getElementById('pur-supp').value,
+            cost: Number(document.getElementById('pur-cost').value)
+        };
+    } else if (currentEditingStore === 'expenseModal') {
+        obj = {
+            date: document.getElementById('e-date').value,
+            category: document.getElementById('e-cat').value,
+            notes: document.getElementById('e-notes').value,
+            amount: Number(document.getElementById('e-amt').value)
+        };
+    }
 
-            tx.oncomplete = () => {
-                closeModal();
-                loadAllData();
-            };
-        }
+    if (currentEditingId) {
+        obj.id = currentEditingId;
+        store.put(obj);
+    } else {
+        store.add(obj);
+    }
+
+    tx.oncomplete = () => {
+        closeModal();
+        loadAllData();
+    };
+
+    tx.onerror = (e) => {
+        console.error("Database transaction error:", e.target.error);
+        alert("Failed to save record. Check console for details.");
+    };
+}
 
         function openBaseStockModal() {
             currentEditingStore = 'settings';
