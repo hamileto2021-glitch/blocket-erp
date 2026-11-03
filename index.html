@@ -240,15 +240,38 @@
         </section>
 
         <!-- DATABASE VIEW -->
-        <section id="view-database" class="hidden space-y-6">
-            <h2 class="text-xl font-bold text-slate-900">Database & Storage Management</h2>
-            <div class="bg-white p-6 rounded-2xl border border-slate-200 space-y-4">
-                <p class="text-sm text-slate-600">All data is stored locally in your browser using IndexedDB. You can reset or clear state at any time.</p>
-                <div class="flex gap-4">
-                    <button onclick="clearAllData()" class="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition">Clear All Data & Reset to Zero</button>
-                </div>
+<section id="view-database" class="hidden space-y-6">
+    <h2 class="text-xl font-bold text-slate-900">Database & Storage Management</h2>
+    <div class="bg-white p-6 rounded-2xl border border-slate-200 space-y-6">
+        <p class="text-sm text-slate-600">All data is stored locally in your browser using IndexedDB. Use the tools below to backup your data to a JSON file or restore it across different hosting URLs (like GitHub Pages and Vercel).</p>
+        
+        <!-- Export / Import Controls -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                <h3 class="font-bold text-slate-800 text-sm">Export Data Backup</h3>
+                <p class="text-xs text-slate-500">Download all your production logs, sales, purchases, and expenses as a JSON file.</p>
+                <button onclick="exportDatabaseJSON()" class="bg-slate-900 hover:bg-slate-800 text-white font-semibold px-4 py-2 rounded-xl text-sm transition">Download JSON Backup</button>
             </div>
-        </section>
+            
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                <h3 class="font-bold text-slate-800 text-sm">Restore Data Backup</h3>
+                <p class="text-xs text-slate-500">Upload a previously exported JSON backup file to populate this browser.</p>
+                <input type="file" id="importFile" accept=".json" onchange="importDatabaseJSON(event)" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-amber-500 file:text-slate-900 hover:file:bg-amber-600 cursor-pointer">
+            </div>
+        </div>
+
+        <hr class="border-slate-200">
+
+        <!-- Reset Control -->
+        <div class="flex justify-between items-center">
+            <div>
+                <h3 class="font-bold text-rose-600 text-sm">Danger Zone</h3>
+                <p class="text-xs text-slate-500">Permanently clear all local records and reset application state.</p>
+            </div>
+            <button onclick="clearAllData()" class="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition">Clear All Data</button>
+        </div>
+    </div>
+</section>
 
     </main>
 
@@ -653,6 +676,77 @@
 
         // Run Init on Load
         window.onload = initDB;
+
+        // Export all IndexedDB stores to a JSON file
+async function exportDatabaseJSON() {
+    const storeNames = ['blockets', 'sales', 'purchases', 'expenses', 'settings'];
+    const exportData = {};
+
+    for (const storeName of storeNames) {
+        await new Promise((resolve, reject) => {
+            const tx = db.transaction(storeName, 'readonly');
+            const req = tx.objectStore(storeName).getAll();
+            req.onsuccess = (e) => {
+                exportData[storeName] = e.target.result;
+                resolve();
+            };
+            req.onerror = (e) => reject(e.target.error);
+        });
+    }
+
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `blocket_erp_backup_${new Date().toISOString().split('T')[0]}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+}
+
+// Import and overwrite IndexedDB stores from an uploaded JSON file
+function importDatabaseJSON(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!confirm("Restoring a backup will overwrite existing data in this browser session. Do you want to proceed?")) {
+        event.target.value = ''; // Reset file input
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        try {
+            const importData = JSON.parse(e.target.result);
+            const storeNames = ['blockets', 'sales', 'purchases', 'expenses', 'settings'];
+            const tx = db.transaction(storeNames, 'readwrite');
+
+            for (const storeName of storeNames) {
+                if (importData[storeName]) {
+                    const store = tx.objectStore(storeName);
+                    store.clear(); // Clear existing store data
+                    importData[storeName].forEach(item => {
+                        store.add(item);
+                    });
+                }
+            }
+
+            tx.oncomplete = () => {
+                alert("Database restored successfully!");
+                loadAllData();
+                event.target.value = ''; // Reset file input
+            };
+            tx.onerror = (err) => {
+                console.error("Import transaction error:", err);
+                alert("Failed to import database.");
+            };
+        } catch (err) {
+            console.error("Invalid JSON file:", err);
+            alert("The selected file is not a valid JSON backup.");
+        }
+    };
+    reader.readAsText(file);
+}
+
     </script>
 </body>
 </html>
