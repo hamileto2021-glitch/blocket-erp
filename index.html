@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Blocket Master ERP - Concrete Block Manufacturing</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -289,464 +290,308 @@
 
     <!-- Application Script -->
     <script>
-        let db;
-        let currentEditingStore = null;
-        let currentEditingId = null;
-        let baseStock = { '10cm': 0, '15cm': 0, '20cm': 0 };
+        // Initialize Supabase Client
+    const SUPABASE_URL = 'https://YOUR-PROJECT-REF.supabase.co';
+    const SUPABASE_ANON_KEY = 'YOUR-ANON-KEY';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Initialize IndexedDB
-        function initDB() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open("BlocketMasterDB", 1);
-                request.onerror = e => reject(e.target.error);
-                request.onupgradeneeded = e => {
-                    const dbInstance = e.target.result;
-                    ['blockets', 'sales', 'purchases', 'expenses', 'settings'].forEach(store => {
-                        if (!dbInstance.objectStoreNames.contains(store)) {
-                            dbInstance.createObjectStore(store, { keyPath: 'id', autoIncrement: true });
-                        }
-                    });
-                };
-                request.onsuccess = e => {
-                    db = e.target.result;
-                    loadAllData();
-                    resolve(db);
-                };
-            });
-        }
+    let currentEditingStore = null;
+    let currentEditingId = null;
+    let baseStock = { '10cm': 0, '15cm': 0, '20cm': 0 };
 
-        function switchTab(tabId) {
-            ['dashboard', 'production', 'sales', 'purchases', 'expenses', 'financials', 'reports', 'database'].forEach(t => {
-                document.getElementById(`view-${t}`).classList.add('hidden');
-                document.getElementById(`nav-${t}`).className = "px-3 py-1.5 rounded-lg font-medium text-slate-300 hover:text-white transition";
-            });
-            document.getElementById(`view-${tabId}`).classList.remove('hidden');
-            document.getElementById(`nav-${tabId}`).className = "px-3 py-1.5 rounded-lg font-medium bg-amber-500 text-slate-900 transition";
-        }
-
-        function openModal(type) {
-            currentEditingId = null;
-            currentEditingStore = type;
-            const title = document.getElementById('modalTitle');
-            const content = document.getElementById('modalContent');
-            
-            if (type === 'productionModal') {
-                title.innerText = "Log Production Batch";
-                content.innerHTML = `
-                    <div class="space-y-3">
-                        <div><label class="text-xs font-semibold text-slate-600">Date</label><input type="date" id="p-date" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${new Date().toISOString().split('T')[0]}"></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Block Size</label><select id="p-size" class="w-full mt-1 p-2 border rounded-xl text-sm"><option value="10cm">10cm</option><option value="15cm">15cm</option><option value="20cm">20cm</option></select></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Gross Yield</label><input type="number" id="p-gross" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="0"></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Breakage</label><input type="number" id="p-break" class="w-full mt-1 p-2 border rounded-xl text-sm" value="0"></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Labor Cost ($)</label><input type="number" id="p-labor" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="0.00"></div>
-                    </div>
-                `;
-            } else if (type === 'saleModal') {
-                title.innerText = "New Sale Invoice";
-                content.innerHTML = `
-                    <div class="space-y-3">
-                        <div><label class="text-xs font-semibold text-slate-600">Date</label><input type="date" id="s-date" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${new Date().toISOString().split('T')[0]}"></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Customer Name</label><input type="text" id="s-customer" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="Customer / Contractor"></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Block Size</label><select id="s-size" class="w-full mt-1 p-2 border rounded-xl text-sm"><option value="10cm">10cm</option><option value="15cm">15cm</option><option value="20cm">20cm</option></select></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Quantity Sold</label><input type="number" id="s-qty" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="0"></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Unit Price ($)</label><input type="number" id="s-price" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="0.00"></div>
-                    </div>
-                `;
-            } else if (type === 'purchaseModal') {
-                title.innerText = "Log Raw Material Purchase";
-                content.innerHTML = `
-                    <div class="space-y-3">
-                        <div><label class="text-xs font-semibold text-slate-600">Date</label><input type="date" id="pur-date" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${new Date().toISOString().split('T')[0]}"></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Material Type</label><select id="pur-material" class="w-full mt-1 p-2 border rounded-xl text-sm"><option value="Cement">Cement</option><option value="Pumice">Pumice</option><option value="Sand">Sand</option></select></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Quantity</label><input type="number" id="pur-qty" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="0"></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Supplier</label><input type="text" id="pur-supp" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="Supplier Name"></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Total Cost ($)</label><input type="number" id="pur-cost" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="0.00"></div>
-                    </div>
-                `;
-            } else if (type === 'expenseModal') {
-                title.innerText = "Add Operational Expense";
-                content.innerHTML = `
-                    <div class="space-y-3">
-                        <div><label class="text-xs font-semibold text-slate-600">Date</label><input type="date" id="e-date" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${new Date().toISOString().split('T')[0]}"></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Category</label><input type="text" id="e-cat" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="Fuel, Maintenance, Transport"></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Notes</label><input type="text" id="e-notes" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="Description"></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Amount ($)</label><input type="number" id="e-amt" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="0.00"></div>
-                    </div>
-                `;
-            }
-            document.getElementById('genericModal').classList.remove('hidden');
-            document.getElementById('genericModal').classList.add('flex');
-        }
-
-        function closeModal() {
-            document.getElementById('genericModal').classList.remove('flex');
-            document.getElementById('genericModal').classList.add('hidden');
-        }
-
-        function saveModalData() {
-    // 1. Map the modal name to the correct database store name FIRST
-    let storeName = currentEditingStore;
-    if (storeName === 'productionModal') storeName = 'blockets';
-    if (storeName === 'saleModal') storeName = 'sales';
-    if (storeName === 'purchaseModal') storeName = 'purchases';
-    if (storeName === 'expenseModal') storeName = 'expenses';
-
-    // 2. Now open the transaction using the correct store name
-    const tx = db.transaction(storeName, 'readwrite');
-    const store = tx.objectStore(storeName);
-    let obj = {};
-
-    // 3. Extract form data based on what modal is open
-    if (currentEditingStore === 'productionModal') {
-        obj = {
-            date: document.getElementById('p-date').value,
-            size: document.getElementById('p-size').value,
-            gross: Number(document.getElementById('p-gross').value),
-            breakage: Number(document.getElementById('p-break').value),
-            labor: Number(document.getElementById('p-labor').value),
-            net: Number(document.getElementById('p-gross').value) - Number(document.getElementById('p-break').value)
-        };
-    } else if (currentEditingStore === 'saleModal') {
-        obj = {
-            date: document.getElementById('s-date').value,
-            customer: document.getElementById('s-customer').value,
-            size: document.getElementById('s-size').value,
-            qty: Number(document.getElementById('s-qty').value),
-            price: Number(document.getElementById('s-price').value),
-            total: Number(document.getElementById('s-qty').value) * Number(document.getElementById('s-price').value)
-        };
-    } else if (currentEditingStore === 'purchaseModal') {
-        obj = {
-            date: document.getElementById('pur-date').value,
-            material: document.getElementById('pur-material').value,
-            qty: Number(document.getElementById('pur-qty').value),
-            supplier: document.getElementById('pur-supp').value,
-            cost: Number(document.getElementById('pur-cost').value)
-        };
-    } else if (currentEditingStore === 'expenseModal') {
-        obj = {
-            date: document.getElementById('e-date').value,
-            category: document.getElementById('e-cat').value,
-            notes: document.getElementById('e-notes').value,
-            amount: Number(document.getElementById('e-amt').value)
-        };
+    function switchTab(tabId) {
+        ['dashboard', 'production', 'sales', 'purchases', 'expenses', 'financials', 'reports', 'database'].forEach(t => {
+            document.getElementById(`view-${t}`).classList.add('hidden');
+            document.getElementById(`nav-${t}`).className = "px-3 py-1.5 rounded-lg font-medium text-slate-300 hover:text-white transition";
+        });
+        document.getElementById(`view-${tabId}`).classList.remove('hidden');
+        document.getElementById(`nav-${tabId}`).className = "px-3 py-1.5 rounded-lg font-medium bg-amber-500 text-slate-900 transition";
     }
 
-    if (currentEditingId) {
-        obj.id = currentEditingId;
-        store.put(obj);
-    } else {
-        store.add(obj);
-    }
-
-    tx.oncomplete = () => {
-        closeModal();
-        loadAllData();
-    };
-
-    tx.onerror = (e) => {
-        console.error("Database transaction error:", e.target.error);
-        alert("Failed to save record. Check console for details.");
-    };
-}
-
-        function openBaseStockModal() {
-            currentEditingStore = 'settings';
-            currentEditingId = 'baseStock';
-            const title = document.getElementById('modalTitle');
-            const content = document.getElementById('modalContent');
-            title.innerText = "Adjust Initial Base Stock";
+    function openModal(type) {
+        currentEditingId = null;
+        currentEditingStore = type;
+        const title = document.getElementById('modalTitle');
+        const content = document.getElementById('modalContent');
+        
+        if (type === 'productionModal') {
+            title.innerText = "Log Production Batch";
             content.innerHTML = `
                 <div class="space-y-3">
-                    <div><label class="text-xs font-semibold text-slate-600">10cm Initial Stock</label><input type="number" id="bs-10" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${baseStock['10cm']}"></div>
-                    <div><label class="text-xs font-semibold text-slate-600">15cm Initial Stock</label><input type="number" id="bs-15" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${baseStock['15cm']}"></div>
-                    <div><label class="text-xs font-semibold text-slate-600">20cm Initial Stock</label><input type="number" id="bs-20" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${baseStock['20cm']}"></div>
+                    <div><label class="text-xs font-semibold text-slate-600">Date</label><input type="date" id="p-date" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${new Date().toISOString().split('T')[0]}"></div>
+                    <div><label class="text-xs font-semibold text-slate-600">Block Size</label><select id="p-size" class="w-full mt-1 p-2 border rounded-xl text-sm"><option value="10cm">10cm</option><option value="15cm">15cm</option><option value="20cm">20cm</option></select></div>
+                    <div><label class="text-xs font-semibold text-slate-600">Gross Yield</label><input type="number" id="p-gross" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="0"></div>
+                    <div><label class="text-xs font-semibold text-slate-600">Breakage</label><input type="number" id="p-break" class="w-full mt-1 p-2 border rounded-xl text-sm" value="0"></div>
+                    <div><label class="text-xs font-semibold text-slate-600">Labor Cost ($)</label><input type="number" id="p-labor" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="0.00"></div>
                 </div>
             `;
-            document.getElementById('genericModal').classList.remove('hidden');
-            document.getElementById('genericModal').classList.add('flex');
-            
-            // Override save action for base stock
-            document.getElementById('modalSaveBtn').onclick = () => {
-                baseStock['10cm'] = Number(document.getElementById('bs-10').value);
-                baseStock['15cm'] = Number(document.getElementById('bs-15').value);
-                baseStock['20cm'] = Number(document.getElementById('bs-20').value);
-                
-                const tx = db.transaction('settings', 'readwrite');
-                tx.objectStore('settings').put({ id: 'baseStock', data: baseStock });
-                tx.oncomplete = () => {
-                    closeModal();
-                    loadAllData();
-                    // Restore default save button action
-                    document.getElementById('modalSaveBtn').onclick = saveModalData;
-                };
-            };
+        } else if (type === 'saleModal') {
+            title.innerText = "New Sale Invoice";
+            content.innerHTML = `
+                <div class="space-y-3">
+                    <div><label class="text-xs font-semibold text-slate-600">Date</label><input type="date" id="s-date" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${new Date().toISOString().split('T')[0]}"></div>
+                    <div><label class="text-xs font-semibold text-slate-600">Customer Name</label><input type="text" id="s-customer" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="Customer / Contractor"></div>
+                    <div><label class="text-xs font-semibold text-slate-600">Block Size</label><select id="s-size" class="w-full mt-1 p-2 border rounded-xl text-sm"><option value="10cm">10cm</option><option value="15cm">15cm</option><option value="20cm">20cm</option></select></div>
+                    <div><label class="text-xs font-semibold text-slate-600">Quantity Sold</label><input type="number" id="s-qty" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="0"></div>
+                    <div><label class="text-xs font-semibold text-slate-600">Unit Price ($)</label><input type="number" id="s-price" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="0.00"></div>
+                </div>
+            `;
+        } else if (type === 'purchaseModal') {
+            title.innerText = "Log Raw Material Purchase";
+            content.innerHTML = `
+                <div class="space-y-3">
+                    <div><label class="text-xs font-semibold text-slate-600">Date</label><input type="date" id="pur-date" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${new Date().toISOString().split('T')[0]}"></div>
+                    <div><label class="text-xs font-semibold text-slate-600">Material Type</label><select id="pur-material" class="w-full mt-1 p-2 border rounded-xl text-sm"><option value="Cement">Cement</option><option value="Pumice">Pumice</option><option value="Sand">Sand</option></select></div>
+                    <div><label class="text-xs font-semibold text-slate-600">Quantity</label><input type="number" id="pur-qty" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="0"></div>
+                    <div><label class="text-xs font-semibold text-slate-600">Supplier</label><input type="text" id="pur-supp" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="Supplier Name"></div>
+                    <div><label class="text-xs font-semibold text-slate-600">Total Cost ($)</label><input type="number" id="pur-cost" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="0.00"></div>
+                </div>
+            `;
+        } else if (type === 'expenseModal') {
+            title.innerText = "Add Operational Expense";
+            content.innerHTML = `
+                <div class="space-y-3">
+                    <div><label class="text-xs font-semibold text-slate-600">Date</label><input type="date" id="e-date" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${new Date().toISOString().split('T')[0]}"></div>
+                    <div><label class="text-xs font-semibold text-slate-600">Category</label><input type="text" id="e-cat" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="Fuel, Maintenance, Transport"></div>
+                    <div><label class="text-xs font-semibold text-slate-600">Notes</label><input type="text" id="e-notes" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="Description"></div>
+                    <div><label class="text-xs font-semibold text-slate-600">Amount ($)</label><input type="number" id="e-amt" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="0.00"></div>
+                </div>
+            `;
         }
-
-        function deleteRecord(storeName, id) {
-            if (!confirm("Are you sure you want to delete this record?")) return;
-            const tx = db.transaction(storeName, 'readwrite');
-            tx.objectStore(storeName).delete(Number(id));
-            tx.oncomplete = () => loadAllData();
-        }
-
-        function clearAllData() {
-            if (!confirm("Are you sure you want to clear all data and reset everything to 0?")) return;
-            const stores = ['blockets', 'sales', 'purchases', 'expenses', 'settings'];
-            const tx = db.transaction(stores, 'readwrite');
-            stores.forEach(s => tx.objectStore(s).clear());
-            tx.oncomplete = () => {
-                baseStock = { '10cm': 0, '15cm': 0, '20cm': 0 };
-                loadAllData();
-                alert("All data cleared successfully.");
-            };
-        }
-
-        function loadAllData() {
-            // Load Settings / Base Stock
-            const tx = db.transaction(['blockets', 'sales', 'purchases', 'expenses', 'settings'], 'readonly');
-            
-            // Get settings
-            tx.objectStore('settings').get('baseStock').onsuccess = (e) => {
-                if (e.target.result) baseStock = e.target.result.data;
-            };
-
-            let allBlockets = [], allSales = [], allPurchases = [], allExpenses = [];
-
-            tx.objectStore('blockets').getAll().onsuccess = (e) => { allBlockets = e.target.result; };
-            tx.objectStore('sales').getAll().onsuccess = (e) => { allSales = e.target.result; };
-            tx.objectStore('purchases').getAll().onsuccess = (e) => { allPurchases = e.target.result; };
-            tx.objectStore('expenses').getAll().onsuccess = (e) => { allExpenses = e.target.result; };
-
-            tx.oncomplete = () => {
-                renderDashboard(allBlockets, allSales, allPurchases, allExpenses);
-                renderProductionTable(allBlockets);
-                renderSalesTable(allSales);
-                renderPurchasesTable(allPurchases);
-                renderExpensesTable(allExpenses);
-                renderFinancials(allSales, allBlockets, allPurchases, allExpenses);
-            };
-        }
-
-        function renderDashboard(blockets, sales, purchases, expenses) {
-            let prod10 = 0, prod15 = 0, prod20 = 0;
-            blockets.forEach(b => {
-                if (b.size === '10cm') prod10 += (b.net || 0);
-                if (b.size === '15cm') prod15 += (b.net || 0);
-                if (b.size === '20cm') prod20 += (b.net || 0);
-            });
-
-            let sold10 = 0, sold15 = 0, sold20 = 0;
-            sales.forEach(s => {
-                if (s.size === '10cm') sold10 += (s.qty || 0);
-                if (s.size === '15cm') sold15 += (s.qty || 0);
-                if (s.size === '20cm') sold20 += (s.qty || 0);
-            });
-
-            const stock10 = (baseStock['10cm'] || 0) + prod10 - sold10;
-            const stock15 = (baseStock['15cm'] || 0) + prod15 - sold15;
-            const stock20 = (baseStock['20cm'] || 0) + prod20 - sold20;
-
-            document.getElementById('stock-10cm').innerText = stock10;
-            document.getElementById('stock-15cm').innerText = stock15;
-            document.getElementById('stock-20cm').innerText = stock20; // Quick clamp
-            document.getElementById('dash-blocks').innerText = (stock10 + stock15 + stock20) + " units";
-
-            let totalRev = 0;
-            sales.forEach(s => totalRev += (s.total || 0));
-            document.getElementById('dash-revenue').innerText = `$${totalRev.toFixed(2)}`;
-        }
-
-        function renderProductionTable(data) {
-            const tbody = document.getElementById('production-table-body');
-            if (data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">No production logs recorded yet.</td></tr>`;
-                return;
-            }
-            tbody.innerHTML = data.map(item => `
-                <tr class="hover:bg-slate-50">
-                    <td class="p-3">${item.date}</td>
-                    <td class="p-3 font-semibold">${item.size}</td>
-                    <td class="p-3">${item.gross}</td>
-                    <td class="p-3">${item.breakage}</td>
-                    <td class="p-3 font-bold text-emerald-600">${item.net}</td>
-                    <td class="p-3">$${(item.labor || 0).toFixed(2)}</td>
-                    <td class="p-3 text-right">
-                        <button onclick="deleteRecord('blockets', ${item.id})" class="text-rose-600 hover:text-rose-800 text-xs font-semibold">Delete</button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        function renderSalesTable(data) {
-            const tbody = document.getElementById('sales-table-body');
-            if (data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">No sales recorded yet.</td></tr>`;
-                return;
-            }
-            tbody.innerHTML = data.map(item => `
-                <tr class="hover:bg-slate-50">
-                    <td class="p-3">${item.date}</td>
-                    <td class="p-3 font-medium text-slate-900">${item.customer}</td>
-                    <td class="p-3">${item.size}</td>
-                    <td class="p-3">${item.qty}</td>
-                    <td class="p-3">$${(item.price || 0).toFixed(2)}</td>
-                    <td class="p-3 font-bold text-slate-900">$${(item.total || 0).toFixed(2)}</td>
-                    <td class="p-3 text-right">
-                        <button onclick="deleteRecord('sales', ${item.id})" class="text-rose-600 hover:text-rose-800 text-xs font-semibold">Delete</button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        function renderPurchasesTable(data) {
-            const tbody = document.getElementById('purchases-table-body');
-            if (data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">No raw material purchases recorded.</td></tr>`;
-                return;
-            }
-            tbody.innerHTML = data.map(item => `
-                <tr class="hover:bg-slate-50">
-                    <td class="p-3">${item.date}</td>
-                    <td class="p-3 font-medium text-slate-900">${item.material}</td>
-                    <td class="p-3">${item.qty}</td>
-                    <td class="p-3">${item.supplier}</td>
-                    <td class="p-3 font-bold text-slate-900">$${(item.cost || 0).toFixed(2)}</td>
-                    <td class="p-3 text-right">
-                        <button onclick="deleteRecord('purchases', ${item.id})" class="text-rose-600 hover:text-rose-800 text-xs font-semibold">Delete</button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        function renderExpensesTable(data) {
-            const tbody = document.getElementById('expenses-table-body');
-            if (data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">No operational expenses recorded.</td></tr>`;
-                return;
-            }
-            tbody.innerHTML = data.map(item => `
-                <tr class="hover:bg-slate-50">
-                    <td class="p-3">${item.date}</td>
-                    <td class="p-3 font-medium text-slate-900">${item.category}</td>
-                    <td class="p-3">${item.notes}</td>
-                    <td class="p-3 font-bold text-slate-900">$${(item.amount || 0).toFixed(2)}</td>
-                    <td class="p-3 text-right">
-                        <button onclick="deleteRecord('expenses', ${item.id})" class="text-rose-600 hover:text-rose-800 text-xs font-semibold">Delete</button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        function renderFinancials(sales, blockets, purchases, expenses) {
-            let rev = 0, labor = 0, purCost = 0, expCost = 0;
-            sales.forEach(s => rev += (s.total || 0));
-            blockets.forEach(b => labor += (b.labor || 0));
-            purchases.forEach(p => purCost += (p.cost || 0));
-            expenses.forEach(e => expCost += (e.amount || 0));
-
-            const net = rev - (labor + purCost + expCost);
-
-            document.getElementById('fin-revenue').innerText = `$${rev.toFixed(2)}`;
-            document.getElementById('fin-labor').innerText = `$${labor.toFixed(2)}`;
-            document.getElementById('fin-purchases').innerText = `$${purCost.toFixed(2)}`;
-            document.getElementById('fin-expenses').innerText = `$${expCost.toFixed(2)}`;
-            document.getElementById('fin-net').innerText = `$${net.toFixed(2)}`;
-            document.getElementById('dash-profit').innerText = `$${net.toFixed(2)}`;
-        }
-
-        function exportCSV(type) {
-            const tx = db.transaction(type === 'production' ? 'blockets' : 'sales', 'readonly');
-            tx.objectStore(type === 'production' ? 'blockets' : 'sales').getAll().onsuccess = (e) => {
-                const data = e.target.result;
-                if (!data.length) { alert("No data to export."); return; }
-                let csv = "data:text/csv;charset=utf-8," + Object.keys(data[0]).join(",") + "\n";
-                data.forEach(row => {
-                    csv += Object.values(row).join(",") + "\n";
-                });
-                const encodedUri = encodeURI(csv);
-                const link = document.createElement("a");
-                link.setAttribute("href", encodedUri);
-                link.setAttribute("download", `${type}_report.csv`);
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            };
-        }
-
-        // Run Init on Load
-        window.onload = initDB;
-
-        // Export all IndexedDB stores to a JSON file
-async function exportDatabaseJSON() {
-    const storeNames = ['blockets', 'sales', 'purchases', 'expenses', 'settings'];
-    const exportData = {};
-
-    for (const storeName of storeNames) {
-        await new Promise((resolve, reject) => {
-            const tx = db.transaction(storeName, 'readonly');
-            const req = tx.objectStore(storeName).getAll();
-            req.onsuccess = (e) => {
-                exportData[storeName] = e.target.result;
-                resolve();
-            };
-            req.onerror = (e) => reject(e.target.error);
-        });
+        document.getElementById('genericModal').classList.remove('hidden');
+        document.getElementById('genericModal').classList.add('flex');
     }
 
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `blocket_erp_backup_${new Date().toISOString().split('T')[0]}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-}
-
-// Import and overwrite IndexedDB stores from an uploaded JSON file
-function importDatabaseJSON(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    if (!confirm("Restoring a backup will overwrite existing data in this browser session. Do you want to proceed?")) {
-        event.target.value = ''; // Reset file input
-        return;
+    function closeModal() {
+        document.getElementById('genericModal').classList.remove('flex');
+        document.getElementById('genericModal').classList.add('hidden');
     }
 
-    const reader = new FileReader();
-    reader.onload = async function(e) {
+    // Updated cloud save function
+    async function saveModalData() {
+        let tableName = currentEditingStore;
+        if (tableName === 'productionModal') tableName = 'blockets';
+        if (tableName === 'saleModal') tableName = 'sales';
+        if (tableName === 'purchaseModal') tableName = 'purchases';
+        if (tableName === 'expenseModal') tableName = 'expenses';
+
+        let obj = {};
+        if (currentEditingStore === 'productionModal') {
+            obj = {
+                date: document.getElementById('p-date').value,
+                size: document.getElementById('p-size').value,
+                gross: Number(document.getElementById('p-gross').value),
+                breakage: Number(document.getElementById('p-break').value),
+                labor: Number(document.getElementById('p-labor').value),
+                net: Number(document.getElementById('p-gross').value) - Number(document.getElementById('p-break').value)
+            };
+        } else if (currentEditingStore === 'saleModal') {
+            obj = {
+                date: document.getElementById('s-date').value,
+                customer: document.getElementById('s-customer').value,
+                size: document.getElementById('s-size').value,
+                qty: Number(document.getElementById('s-qty').value),
+                price: Number(document.getElementById('s-price').value),
+                total: Number(document.getElementById('s-qty').value) * Number(document.getElementById('s-price').value)
+            };
+        } else if (currentEditingStore === 'purchaseModal') {
+            obj = {
+                date: document.getElementById('pur-date').value,
+                material: document.getElementById('pur-material').value,
+                qty: Number(document.getElementById('pur-qty').value),
+                supplier: document.getElementById('pur-supp').value,
+                cost: Number(document.getElementById('pur-cost').value)
+            };
+        } else if (currentEditingStore === 'expenseModal') {
+            obj = {
+                date: document.getElementById('e-date').value,
+                category: document.getElementById('e-cat').value,
+                notes: document.getElementById('e-notes').value,
+                amount: Number(document.getElementById('e-amt').value)
+            };
+        }
+
+        const { error } = await supabaseClient.from(tableName).insert([obj]);
+
+        if (error) {
+            console.error("Error inserting record:", error);
+            alert("Failed to save to cloud.");
+        } else {
+            closeModal();
+            loadAllData();
+        }
+    }
+
+    // Delete Record & Cloud Sync
+    async function deleteRecord(tableName, id) {
+        if (!confirm("Are you sure you want to delete this record from the cloud?")) return;
+        
+        const { error } = await supabaseClient
+            .from(tableName)
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            alert("Failed to delete record.");
+        } else {
+            loadAllData();
+        }
+    }
+
+    function clearAllData() {
+        alert("Cloud data management should be done via Supabase dashboard.");
+    }
+
+    // Replace loadAllData with async cloud fetching
+    async function loadAllData() {
         try {
-            const importData = JSON.parse(e.target.result);
-            const storeNames = ['blockets', 'sales', 'purchases', 'expenses', 'settings'];
-            const tx = db.transaction(storeNames, 'readwrite');
+            const [{ data: blockets }, { data: sales }, { data: purchases }, { data: expenses }] = await Promise.all([
+                supabaseClient.from('blockets').select('*'),
+                supabaseClient.from('sales').select('*'),
+                supabaseClient.from('purchases').select('*'),
+                supabaseClient.from('expenses').select('*')
+            ]);
 
-            for (const storeName of storeNames) {
-                if (importData[storeName]) {
-                    const store = tx.objectStore(storeName);
-                    store.clear(); // Clear existing store data
-                    importData[storeName].forEach(item => {
-                        store.add(item);
-                    });
-                }
-            }
-
-            tx.oncomplete = () => {
-                alert("Database restored successfully!");
-                loadAllData();
-                event.target.value = ''; // Reset file input
-            };
-            tx.onerror = (err) => {
-                console.error("Import transaction error:", err);
-                alert("Failed to import database.");
-            };
+            renderDashboard(blockets || [], sales || [], purchases || [], expenses || []);
+            renderProductionTable(blockets || []);
+            renderSalesTable(sales || []);
+            renderPurchasesTable(purchases || []);
+            renderExpensesTable(expenses || []);
+            renderFinancials(sales || [], blockets || [], purchases || [], expenses || []);
         } catch (err) {
-            console.error("Invalid JSON file:", err);
-            alert("The selected file is not a valid JSON backup.");
+            console.error("Cloud fetch failed:", err);
         }
-    };
-    reader.readAsText(file);
-}
+    }
 
+    function renderDashboard(blockets, sales, purchases, expenses) {
+        let prod10 = 0, prod15 = 0, prod20 = 0;
+        blockets.forEach(b => {
+            if (b.size === '10cm') prod10 += (b.net || 0);
+            if (b.size === '15cm') prod15 += (b.net || 0);
+            if (b.size === '20cm') prod20 += (b.net || 0);
+        });
+
+        let sold10 = 0, sold15 = 0, sold20 = 0;
+        sales.forEach(s => {
+            if (s.size === '10cm') sold10 += (s.qty || 0);
+            if (s.size === '15cm') sold15 += (s.qty || 0);
+            if (s.size === '20cm') sold20 += (s.qty || 0);
+        });
+
+        const stock10 = (baseStock['10cm'] || 0) + prod10 - sold10;
+        const stock15 = (baseStock['15cm'] || 0) + prod15 - sold15;
+        const stock20 = (baseStock['20cm'] || 0) + prod20 - sold20;
+
+        document.getElementById('stock-10cm').innerText = stock10;
+        document.getElementById('stock-15cm').innerText = stock15;
+        document.getElementById('stock-20cm').innerText = stock20;
+        document.getElementById('dash-blocks').innerText = (stock10 + stock15 + stock20) + " units";
+
+        let totalRev = 0;
+        sales.forEach(s => totalRev += (s.total || 0));
+        document.getElementById('dash-revenue').innerText = `$${totalRev.toFixed(2)}`;
+    }
+
+    function renderProductionTable(data) {
+        const tbody = document.getElementById('production-table-body');
+        if (data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">No production logs recorded yet.</td></tr>`;
+            return;
+        }
+        tbody.innerHTML = data.map(item => `
+            <tr class="hover:bg-slate-50">
+                <td class="p-3">${item.date}</td>
+                <td class="p-3 font-semibold">${item.size}</td>
+                <td class="p-3">${item.gross}</td>
+                <td class="p-3">${item.breakage}</td>
+                <td class="p-3 font-bold text-emerald-600">${item.net}</td>
+                <td class="p-3">$${(item.labor || 0).toFixed(2)}</td>
+                <td class="p-3 text-right">
+                    <button onclick="deleteRecord('blockets', ${item.id})" class="text-rose-600 hover:text-rose-800 text-xs font-semibold">Delete</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function renderSalesTable(data) {
+        const tbody = document.getElementById('sales-table-body');
+        if (data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">No sales recorded yet.</td></tr>`;
+            return;
+        }
+        tbody.innerHTML = data.map(item => `
+            <tr class="hover:bg-slate-50">
+                <td class="p-3">${item.date}</td>
+                <td class="p-3 font-medium text-slate-900">${item.customer}</td>
+                <td class="p-3">${item.size}</td>
+                <td class="p-3">${item.qty}</td>
+                <td class="p-3">$${(item.price || 0).toFixed(2)}</td>
+                <td class="p-3 font-bold text-slate-900">$${(item.total || 0).toFixed(2)}</td>
+                <td class="p-3 text-right">
+                    <button onclick="deleteRecord('sales', ${item.id})" class="text-rose-600 hover:text-rose-800 text-xs font-semibold">Delete</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function renderPurchasesTable(data) {
+        const tbody = document.getElementById('purchases-table-body');
+        if (data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">No raw material purchases recorded.</td></tr>`;
+            return;
+        }
+        tbody.innerHTML = data.map(item => `
+            <tr class="hover:bg-slate-50">
+                <td class="p-3">${item.date}</td>
+                <td class="p-3 font-medium text-slate-900">${item.material}</td>
+                <td class="p-3">${item.qty}</td>
+                <td class="p-3">${item.supplier}</td>
+                <td class="p-3 font-bold text-slate-900">$${(item.cost || 0).toFixed(2)}</td>
+                <td class="p-3 text-right">
+                    <button onclick="deleteRecord('purchases', ${item.id})" class="text-rose-600 hover:text-rose-800 text-xs font-semibold">Delete</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function renderExpensesTable(data) {
+        const tbody = document.getElementById('expenses-table-body');
+        if (data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">No operational expenses recorded.</td></tr>`;
+            return;
+        }
+        tbody.innerHTML = data.map(item => `
+            <tr class="hover:bg-slate-50">
+                <td class="p-3">${item.date}</td>
+                <td class="p-3 font-medium text-slate-900">${item.category}</td>
+                <td class="p-3">${item.notes}</td>
+                <td class="p-3 font-bold text-slate-900">$${(item.amount || 0).toFixed(2)}</td>
+                <td class="p-3 text-right">
+                    <button onclick="deleteRecord('expenses', ${item.id})" class="text-rose-600 hover:text-rose-800 text-xs font-semibold">Delete</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function renderFinancials(sales, blockets, purchases, expenses) {
+        let rev = 0, labor = 0, purCost = 0, expCost = 0;
+        sales.forEach(s => rev += (s.total || 0));
+        blockets.forEach(b => labor += (b.labor || 0));
+        purchases.forEach(p => purCost += (p.cost || 0));
+        expenses.forEach(e => expCost += (e.amount || 0));
+
+        const net = rev - (labor + purCost + expCost);
+
+        document.getElementById('fin-revenue').innerText = `$${rev.toFixed(2)}`;
+        document.getElementById('fin-labor').innerText = `$${labor.toFixed(2)}`;
+        document.getElementById('fin-purchases').innerText = `$${purCost.toFixed(2)}`;
+        document.getElementById('fin-expenses').innerText = `$${expCost.toFixed(2)}`;
+        document.getElementById('fin-net').innerText = `$${net.toFixed(2)}`;
+        document.getElementById('dash-profit').innerText = `$${net.toFixed(2)}`;
+    }
+
+    // Replace window.onload initialization
+    window.onload = loadAllData;
     </script>
 </body>
 </html>
