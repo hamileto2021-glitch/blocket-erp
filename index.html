@@ -432,16 +432,52 @@
                     item = globalProductionData.find(b => Number(b.id) === Number(currentEditingId)) || {};
                 }
 
+                let initialRate = 5;
+                if (item.gross && item.labor) {
+                    const net = Math.max(1, item.gross - (item.breakage || 0));
+                    initialRate = Math.round((item.labor / net) * 100) / 100;
+                }
+
                 content.innerHTML = `
                     <div class="space-y-3">
                         <div><label class="text-xs font-semibold text-slate-600">Date</label><input type="date" id="p-date" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.date || new Date().toISOString().split('T')[0]}"></div>
                         <div><label class="text-xs font-semibold text-slate-600">Block Size</label><select id="p-size" class="w-full mt-1 p-2 border rounded-xl text-sm"><option value="10cm" ${item.size === '10cm' ? 'selected' : ''}>10cm</option><option value="15cm" ${item.size === '15cm' ? 'selected' : ''}>15cm</option><option value="20cm" ${item.size === '20cm' ? 'selected' : ''}>20cm</option></select></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Gross Yield</label><input type="number" id="p-gross" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.gross ?? ''}" placeholder="0"></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Breakage</label><input type="number" id="p-break" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.breakage ?? 0}"></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Labor Cost ($)</label><input type="number" id="p-labor" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.labor ?? ''}" placeholder="0.00"></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Produced By (Operator / Crew)</label><input type="text" id="p-operator" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.produced_by || ''}" placeholder="Operator Name"></div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div><label class="text-xs font-semibold text-slate-600">Gross Yield</label><input type="number" id="p-gross" oninput="calculateProductionLabor()" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.gross ?? ''}" placeholder="0"></div>
+                            <div><label class="text-xs font-semibold text-slate-600">Breakage</label><input type="number" id="p-break" oninput="calculateProductionLabor()" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.breakage ?? 0}"></div>
+                        </div>
+
+                        <!-- Labor Rate per Block -->
+                        <div class="bg-amber-50/60 p-3 rounded-xl border border-amber-200/80 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <label class="text-xs font-bold text-slate-800">Labor Rate per Block (ETB / $)</label>
+                                <span class="text-[10px] text-amber-700 font-medium">4, 5, 6 ETB or Custom</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <select id="p-rate-preset" onchange="handleLaborRatePresetChange()" class="w-full p-2 border rounded-xl text-sm bg-white font-medium">
+                                        <option value="4" ${initialRate === 4 ? 'selected' : ''}>4 ETB / block</option>
+                                        <option value="5" ${initialRate === 5 ? 'selected' : ''}>5 ETB / block</option>
+                                        <option value="6" ${initialRate === 6 ? 'selected' : ''}>6 ETB / block</option>
+                                        <option value="custom" ${![4, 5, 6].includes(initialRate) ? 'selected' : ''}>Custom Rate...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <input type="number" id="p-rate" step="0.1" oninput="calculateProductionLabor()" class="w-full p-2 border rounded-xl text-sm bg-white font-semibold text-slate-900" value="${initialRate}" placeholder="Rate per block">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600">Total Labor Earned / Cost ($)</label>
+                            <input type="number" id="p-labor" step="0.01" class="w-full mt-1 p-2 border rounded-xl text-sm font-bold text-emerald-800 bg-emerald-50/50" value="${item.labor ?? ''}" placeholder="0.00">
+                            <p id="p-labor-calc-info" class="text-[11px] text-slate-500 mt-1 font-medium italic">Enter yield and rate to auto-calculate labor earned.</p>
+                        </div>
+
+                        <div><label class="text-xs font-semibold text-slate-600">Produced By (Operator / Crew)</label><input type="text" id="p-operator" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.produced_by || ''}" placeholder="Worker / Crew Name (e.g. Mr X)"></div>
                     </div>
                 `;
+                setTimeout(calculateProductionLabor, 50);
             } else if (type === 'saleModal') {
                 title.innerText = currentEditingId ? "Edit Sale Invoice" : "New Sale Invoice";
                 let item = {};
@@ -663,6 +699,39 @@
                 renderFinancials(globalSalesData, globalProductionData, globalPurchasesData, globalExpensesData, globalLaborData);
             } catch (err) {
                 console.error("Cloud fetch failed:", err);
+            }
+        }
+
+        function handleLaborRatePresetChange() {
+            const preset = document.getElementById('p-rate-preset')?.value;
+            const rateInput = document.getElementById('p-rate');
+            if (!preset || !rateInput) return;
+
+            if (preset !== 'custom') {
+                rateInput.value = preset;
+            }
+            calculateProductionLabor();
+        }
+
+        function calculateProductionLabor() {
+            const gross = Number(document.getElementById('p-gross')?.value || 0);
+            const breaka = Number(document.getElementById('p-break')?.value || 0);
+            const rate = Number(document.getElementById('p-rate')?.value || 0);
+            const net = Math.max(0, gross - breaka);
+            const totalLabor = net * rate;
+
+            const laborInput = document.getElementById('p-labor');
+            if (laborInput) {
+                laborInput.value = totalLabor > 0 ? totalLabor.toFixed(2) : (gross > 0 ? '0.00' : '');
+            }
+
+            const calcInfo = document.getElementById('p-labor-calc-info');
+            if (calcInfo) {
+                if (net > 0 && rate > 0) {
+                    calcInfo.innerText = `Calculated: ${net.toLocaleString()} net blocks × ${rate} ETB/block = $${totalLabor.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                } else {
+                    calcInfo.innerText = `Enter yield and rate to auto-calculate labor earned.`;
+                }
             }
         }
 
