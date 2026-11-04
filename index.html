@@ -455,25 +455,24 @@
             if (tableName === 'laborModal') tableName = 'labor_payments';
 
             let obj = {};
-            } else if (currentEditingStore === 'productionModal') {
-    obj = {
-        date: document.getElementById('p-date').value,
-        size: document.getElementById('p-size').value,
-        gross: Number(document.getElementById('p-gross').value),
-        breakage: Number(document.getElementById('p-break').value),
-        labor: Number(document.getElementById('p-labor').value),
-        net: Number(document.getElementById('p-gross').value) - Number(document.getElementById('p-break').value),
-        produced_by: document.getElementById('p-operator').value
-    };
+            if (currentEditingStore === 'productionModal') {
+                obj = {
+                    date: document.getElementById('p-date').value,
+                    size: document.getElementById('p-size').value,
+                    gross: Number(document.getElementById('p-gross').value),
+                    breakage: Number(document.getElementById('p-break').value),
+                    labor: Number(document.getElementById('p-labor').value),
+                    net: Number(document.getElementById('p-gross').value) - Number(document.getElementById('p-break').value),
+                    produced_by: document.getElementById('p-operator').value
+                };
 
-    if (currentEditingId) {
-        const { error } = await supabaseClient.from('blockets').update(obj).eq('id', currentEditingId);
-        if (error) throw error;
-        closeModal();
-        loadAllData();
-        return;
-    }
-}
+                if (currentEditingId) {
+                    const { error } = await supabaseClient.from('blockets').update(obj).eq('id', currentEditingId);
+                    if (error) throw error;
+                    closeModal();
+                    loadAllData();
+                    return;
+                }
             } else if (currentEditingStore === 'saleModal') {
                 obj = {
                     date: document.getElementById('s-date').value,
