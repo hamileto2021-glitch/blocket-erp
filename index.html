@@ -382,17 +382,10 @@
             const content = document.getElementById('modalContent');
 
             if (type === 'productionModal') {
-                // Now title properly switches based on whether an ID is present
                 title.innerText = currentEditingId ? "Edit Production Batch" : "Log Production Batch";
-
-                // We search globalProductionData *before* rendering the HTML
                 let item = {};
                 if (currentEditingId && globalProductionData) {
-                    item = globalProductionData.find(b => Number(b.id) === Number(currentEditingId));
-                    if (!item) {
-                        console.error("Could not find record in globalProductionData with ID:", currentEditingId);
-                        item = {}; // fallback if not found
-                    }
+                    item = globalProductionData.find(b => Number(b.id) === Number(currentEditingId)) || {};
                 }
 
                 content.innerHTML = `
@@ -406,72 +399,88 @@
                     </div>
                 `;
             } else if (type === 'saleModal') {
-                title.innerText = "New Sale Invoice";
+                title.innerText = currentEditingId ? "Edit Sale Invoice" : "New Sale Invoice";
+                let item = {};
+                if (currentEditingId && globalSalesData) {
+                    item = globalSalesData.find(s => Number(s.id) === Number(currentEditingId)) || {};
+                }
                 content.innerHTML = `
                     <div class="space-y-3">
-                        <div><label class="text-xs font-semibold text-slate-600">Date</label><input type="date" id="s-date" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${new Date().toISOString().split('T')[0]}"></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Customer Name</label><input type="text" id="s-customer" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="Customer / Contractor"></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Block Size</label><select id="s-size" class="w-full mt-1 p-2 border rounded-xl text-sm"><option value="10cm">10cm</option><option value="15cm">15cm</option><option value="20cm">20cm</option></select></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Quantity Sold</label><input type="number" id="s-qty" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="0"></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Unit Price ($)</label><input type="number" id="s-price" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="0.00"></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Date</label><input type="date" id="s-date" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.date || new Date().toISOString().split('T')[0]}"></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Customer Name</label><input type="text" id="s-customer" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.customer || ''}" placeholder="Customer / Contractor"></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Block Size</label><select id="s-size" class="w-full mt-1 p-2 border rounded-xl text-sm"><option value="10cm" ${item.size === '10cm' ? 'selected' : ''}>10cm</option><option value="15cm" ${item.size === '15cm' ? 'selected' : ''}>15cm</option><option value="20cm" ${item.size === '20cm' ? 'selected' : ''}>20cm</option></select></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Quantity Sold</label><input type="number" id="s-qty" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.qty ?? ''}" placeholder="0"></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Unit Price ($)</label><input type="number" id="s-price" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.price ?? ''}" placeholder="0.00"></div>
                     </div>
                 `;
             } else if (type === 'purchaseModal') {
-                title.innerText = "Log Raw Material Purchase";
+                title.innerText = currentEditingId ? "Edit Raw Material Purchase" : "Log Raw Material Purchase";
+                let item = {};
+                if (currentEditingId && globalPurchasesData) {
+                    item = globalPurchasesData.find(p => Number(p.id) === Number(currentEditingId)) || {};
+                }
                 content.innerHTML = `
                     <div class="space-y-3">
-                        <div><label class="text-xs font-semibold text-slate-600">Date</label><input type="date" id="pur-date" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${new Date().toISOString().split('T')[0]}"></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Date</label><input type="date" id="pur-date" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.date || new Date().toISOString().split('T')[0]}"></div>
                         <div>
                             <label class="text-xs font-semibold text-slate-600">Material Type</label>
                             <select id="pur-material" class="w-full mt-1 p-2 border rounded-xl text-sm">
-                                <option value="Cement">Cement</option>
-                                <option value="Pumice">Pumice</option>
-                                <option value="Sand">Sand</option>
-                                <option value="Aggregate / Gravel">Aggregate / Gravel</option>
-                                <option value="Water">Water</option>
-                                <option value="Other">Other / Custom</option>
+                                <option value="Cement" ${item.material === 'Cement' ? 'selected' : ''}>Cement</option>
+                                <option value="Pumice" ${item.material === 'Pumice' ? 'selected' : ''}>Pumice</option>
+                                <option value="Sand" ${item.material === 'Sand' ? 'selected' : ''}>Sand</option>
+                                <option value="Aggregate / Gravel" ${item.material === 'Aggregate / Gravel' ? 'selected' : ''}>Aggregate / Gravel</option>
+                                <option value="Water" ${item.material === 'Water' ? 'selected' : ''}>Water</option>
+                                <option value="Other" ${item.material === 'Other' ? 'selected' : ''}>Other / Custom</option>
                             </select>
                         </div>
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="text-xs font-semibold text-slate-600">Quantity</label>
-                                <input type="number" id="pur-qty" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="0">
+                                <input type="number" id="pur-qty" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.qty ?? ''}" placeholder="0">
                             </div>
                             <div>
                                 <label class="text-xs font-semibold text-slate-600">Unit of Measurement</label>
                                 <select id="pur-unit" class="w-full mt-1 p-2 border rounded-xl text-sm">
-                                    <option value="Bags">Bags</option>
-                                    <option value="Tons">Tons</option>
-                                    <option value="Kg">Kg</option>
-                                    <option value="M³">M³ (Cubic Meters)</option>
-                                    <option value="Litres">Litres</option>
-                                    <option value="Units">Units</option>
+                                    <option value="Bags" ${item.unit === 'Bags' ? 'selected' : ''}>Bags</option>
+                                    <option value="Tons" ${item.unit === 'Tons' ? 'selected' : ''}>Tons</option>
+                                    <option value="Kg" ${item.unit === 'Kg' ? 'selected' : ''}>Kg</option>
+                                    <option value="M³" ${item.unit === 'M³' ? 'selected' : ''}>M³ (Cubic Meters)</option>
+                                    <option value="Litres" ${item.unit === 'Litres' ? 'selected' : ''}>Litres</option>
+                                    <option value="Units" ${item.unit === 'Units' ? 'selected' : ''}>Units</option>
                                 </select>
                             </div>
                         </div>
-                        <div><label class="text-xs font-semibold text-slate-600">Supplier</label><input type="text" id="pur-supp" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="Supplier Name"></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Total Cost ($)</label><input type="number" id="pur-cost" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="0.00"></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Supplier</label><input type="text" id="pur-supp" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.supplier || ''}" placeholder="Supplier Name"></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Total Cost ($)</label><input type="number" id="pur-cost" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.cost ?? ''}" placeholder="0.00"></div>
                     </div>
                 `;
             } else if (type === 'expenseModal') {
-                title.innerText = "Add Operational Expense";
+                title.innerText = currentEditingId ? "Edit Operational Expense" : "Add Operational Expense";
+                let item = {};
+                if (currentEditingId && globalExpensesData) {
+                    item = globalExpensesData.find(e => Number(e.id) === Number(currentEditingId)) || {};
+                }
                 content.innerHTML = `
                     <div class="space-y-3">
-                        <div><label class="text-xs font-semibold text-slate-600">Date</label><input type="date" id="e-date" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${new Date().toISOString().split('T')[0]}"></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Category</label><input type="text" id="e-cat" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="Fuel, Maintenance, Transport"></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Notes</label><input type="text" id="e-notes" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="Description"></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Amount ($)</label><input type="number" id="e-amt" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="0.00"></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Date</label><input type="date" id="e-date" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.date || new Date().toISOString().split('T')[0]}"></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Category</label><input type="text" id="e-cat" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.category || ''}" placeholder="Fuel, Maintenance, Transport"></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Notes</label><input type="text" id="e-notes" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.notes || ''}" placeholder="Description"></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Amount ($)</label><input type="number" id="e-amt" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.amount ?? ''}" placeholder="0.00"></div>
                     </div>
                 `;
             } else if (type === 'laborModal') {
-                title.innerText = "Log Daily Labor Payment";
+                title.innerText = currentEditingId ? "Edit Daily Labor Payment" : "Log Daily Labor Payment";
+                let item = {};
+                if (currentEditingId && globalLaborData) {
+                    item = globalLaborData.find(l => Number(l.id) === Number(currentEditingId)) || {};
+                }
                 content.innerHTML = `
                     <div class="space-y-3">
-                        <div><label class="text-xs font-semibold text-slate-600">Date</label><input type="date" id="l-date" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${new Date().toISOString().split('T')[0]}"></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Worker / Crew Name</label><input type="text" id="l-worker" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="Worker Name"></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Days Worked</label><input type="number" id="l-days" class="w-full mt-1 p-2 border rounded-xl text-sm" value="1" step="0.5"></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Total Amount Paid ($)</label><input type="number" id="l-amt" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="0.00"></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Notes</label><input type="text" id="l-notes" class="w-full mt-1 p-2 border rounded-xl text-sm" placeholder="Optional description"></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Date</label><input type="date" id="l-date" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.date || new Date().toISOString().split('T')[0]}"></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Worker / Crew Name</label><input type="text" id="l-worker" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.worker || ''}" placeholder="Worker Name"></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Days Worked</label><input type="number" id="l-days" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.days ?? 1}" step="0.5"></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Total Amount Paid ($)</label><input type="number" id="l-amt" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.amount ?? ''}" placeholder="0.00"></div>
+                        <div><label class="text-xs font-semibold text-slate-600">Notes</label><input type="text" id="l-notes" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.notes || ''}" placeholder="Optional description"></div>
                     </div>
                 `;
             }
@@ -503,24 +512,6 @@
                     net: Number(document.getElementById('p-gross').value) - Number(document.getElementById('p-break').value),
                     produced_by: document.getElementById('p-operator').value
                 };
-
-                // If editing an existing record, update by ID
-                if (currentEditingId) {
-                    try {
-                        const { error } = await supabaseClient
-                            .from('blockets')
-                            .update(obj)
-                            .eq('id', currentEditingId);
-
-                        if (error) throw error;
-                        closeModal();
-                        loadAllData();
-                        return;
-                    } catch (err) {
-                        alert("Error updating record: " + err.message);
-                        return;
-                    }
-                }
             } else if (currentEditingStore === 'saleModal') {
                 obj = {
                     date: document.getElementById('s-date').value,
@@ -556,14 +547,28 @@
                 };
             }
 
-            // Default insert handler for new records
-            try {
-                const { error } = await supabaseClient.from(tableName).insert([obj]);
-                if (error) throw error;
-                closeModal();
-                loadAllData();
-            } catch (err) {
-                alert("Error saving record: " + err.message);
+            if (currentEditingId) {
+                try {
+                    const { error } = await supabaseClient
+                        .from(tableName)
+                        .update(obj)
+                        .eq('id', currentEditingId);
+
+                    if (error) throw error;
+                    closeModal();
+                    loadAllData();
+                } catch (err) {
+                    alert("Error updating record: " + err.message);
+                }
+            } else {
+                try {
+                    const { error } = await supabaseClient.from(tableName).insert([obj]);
+                    if (error) throw error;
+                    closeModal();
+                    loadAllData();
+                } catch (err) {
+                    alert("Error saving record: " + err.message);
+                }
             }
         }
 
@@ -582,55 +587,63 @@
             }
         }
 
-        let globalProductionData = []; // Cache production records for filtering
+        let globalProductionData = [];
+        let globalSalesData = [];
+        let globalPurchasesData = [];
+        let globalExpensesData = [];
+        let globalLaborData = [];
 
-    // Update your loadAllData function to cache global production data
-    async function loadAllData() {
-    try {
-        const [{ data: blockets }, { data: sales }, { data: purchases }, { data: expenses }, { data: labor }] = await Promise.all([
-            supabaseClient.from('blockets').select('*'),
-            supabaseClient.from('sales').select('*'),
-            supabaseClient.from('purchases').select('*'),
-            supabaseClient.from('expenses').select('*'),
-            supabaseClient.from('labor_payments').select('*')
-        ]);
+        async function loadAllData() {
+            try {
+                const [{ data: blockets }, { data: sales }, { data: purchases }, { data: expenses }, { data: labor }] = await Promise.all([
+                    supabaseClient.from('blockets').select('*'),
+                    supabaseClient.from('sales').select('*'),
+                    supabaseClient.from('purchases').select('*'),
+                    supabaseClient.from('expenses').select('*'),
+                    supabaseClient.from('labor_payments').select('*')
+                ]);
 
-        globalProductionData = blockets || [];
+                globalProductionData = blockets || [];
+                globalSalesData = sales || [];
+                globalPurchasesData = purchases || [];
+                globalExpensesData = expenses || [];
+                globalLaborData = labor || [];
 
-        renderDashboard(globalProductionData, sales || [], purchases || [], expenses || [], labor || []);
-        renderProductionTable(globalProductionData);
-        renderSalesTable(sales || []);
-        renderPurchasesTable(purchases || []);
-        renderExpensesTable(expenses || []);
-        renderLaborTable(labor || []);
-        renderFinancials(sales || [], globalProductionData, purchases || [], expenses || [], labor || []);
-    } catch (err) {
-        console.error("Cloud fetch failed:", err);
-    }
-}
-    // Filter production table based on selected date
-    function filterProductionTable() {
-    const selectedDate = document.getElementById('production-date-filter').value;
-    const selectedSize = document.getElementById('production-size-filter').value;
+                renderDashboard(globalProductionData, globalSalesData, globalPurchasesData, globalExpensesData, globalLaborData);
+                renderProductionTable(globalProductionData);
+                renderSalesTable(globalSalesData);
+                renderPurchasesTable(globalPurchasesData);
+                renderExpensesTable(globalExpensesData);
+                renderLaborTable(globalLaborData);
+                renderFinancials(globalSalesData, globalProductionData, globalPurchasesData, globalExpensesData, globalLaborData);
+            } catch (err) {
+                console.error("Cloud fetch failed:", err);
+            }
+        }
 
-    let filtered = globalProductionData;
+        // Filter production table based on selected date
+        function filterProductionTable() {
+            const selectedDate = document.getElementById('production-date-filter').value;
+            const selectedSize = document.getElementById('production-size-filter').value;
 
-    if (selectedDate) {
-        filtered = filtered.filter(item => item.date === selectedDate);
-    }
-    if (selectedSize) {
-        filtered = filtered.filter(item => item.size === selectedSize);
-    }
+            let filtered = globalProductionData;
 
-    renderProductionTable(filtered);
-}
+            if (selectedDate) {
+                filtered = filtered.filter(item => item.date === selectedDate);
+            }
+            if (selectedSize) {
+                filtered = filtered.filter(item => item.size === selectedSize);
+            }
 
-    // Clear date filter and reset table view
-    function clearProductionFilter() {
-    document.getElementById('production-date-filter').value = '';
-    document.getElementById('production-size-filter').value = '';
-    renderProductionTable(globalProductionData);
-}
+            renderProductionTable(filtered);
+        }
+
+        // Clear date filter and reset table view
+        function clearProductionFilter() {
+            document.getElementById('production-date-filter').value = '';
+            document.getElementById('production-size-filter').value = '';
+            renderProductionTable(globalProductionData);
+        }
 
         function renderDashboard(blockets, sales, purchases, expenses) {
             let prod10 = 0, prod15 = 0, prod20 = 0;
@@ -662,31 +675,31 @@
         }
 
         function renderProductionTable(data) {
-    const tbody = document.getElementById('production-table-body');
-    if (data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400">No production logs recorded yet.</td></tr>`;
-        return;
-    }
-    tbody.innerHTML = data.map(item => `
-        <tr class="hover:bg-slate-50">
-            <td class="p-3">${item.date}</td>
-            <td class="p-3 font-medium text-slate-900">${item.size}</td>
-            <td class="p-3">${item.gross}</td>
-            <td class="p-3 text-rose-600">${item.breakage}</td>
-            <td class="p-3 font-bold text-slate-900">${item.net}</td>
-            <td class="p-3">$${(item.labor || 0).toFixed(2)}</td>
-            <td class="p-3 text-xs text-slate-500">${item.produced_by || '-'}</td>
-            <td class="p-3 text-right space-x-2">
-                <button onclick="editProduction(${item.id})" class="text-amber-600 hover:text-amber-800 font-semibold">Edit</button>
-                <button onclick="deleteRecord('blockets', ${item.id})" class="text-rose-600 hover:text-rose-800 font-semibold">Delete</button>
-            </td>
-        </tr>
-    `).join('');
-}
+            const tbody = document.getElementById('production-table-body');
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400">No production logs recorded yet.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = data.map(item => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3">${item.date}</td>
+                    <td class="p-3 font-medium text-slate-900">${item.size}</td>
+                    <td class="p-3">${item.gross}</td>
+                    <td class="p-3 text-rose-600">${item.breakage}</td>
+                    <td class="p-3 font-bold text-slate-900">${item.net}</td>
+                    <td class="p-3">$${(item.labor || 0).toFixed(2)}</td>
+                    <td class="p-3 text-xs text-slate-500">${item.produced_by || '-'}</td>
+                    <td class="p-3 text-right space-x-2">
+                        <button onclick="editProduction(${item.id})" class="text-amber-600 hover:text-amber-800 font-semibold">Edit</button>
+                        <button onclick="deleteRecord('blockets', ${item.id})" class="text-rose-600 hover:text-rose-800 font-semibold">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
 
-function editProduction(id) {
-    openModal('productionModal', id);
-}
+        function editProduction(id) {
+            openModal('productionModal', id);
+        }
 
         function renderSalesTable(data) {
             const tbody = document.getElementById('sales-table-body');
@@ -702,11 +715,16 @@ function editProduction(id) {
                     <td class="p-3">${item.qty}</td>
                     <td class="p-3">$${(item.price || 0).toFixed(2)}</td>
                     <td class="p-3 font-bold text-slate-900">$${(item.total || 0).toFixed(2)}</td>
-                    <td class="p-3 text-right">
+                    <td class="p-3 text-right space-x-2">
+                        <button onclick="editSale(${item.id})" class="text-amber-600 hover:text-amber-800 text-xs font-semibold">Edit</button>
                         <button onclick="deleteRecord('sales', ${item.id})" class="text-rose-600 hover:text-rose-800 text-xs font-semibold">Delete</button>
                     </td>
                 </tr>
             `).join('');
+        }
+
+        function editSale(id) {
+            openModal('saleModal', id);
         }
 
         function renderPurchasesTable(data) {
@@ -722,11 +740,16 @@ function editProduction(id) {
                     <td class="p-3">${item.qty} ${item.unit || ''}</td>
                     <td class="p-3">${item.supplier}</td>
                     <td class="p-3 font-bold text-slate-900">$${(item.cost || 0).toFixed(2)}</td>
-                    <td class="p-3 text-right">
+                    <td class="p-3 text-right space-x-2">
+                        <button onclick="editPurchase(${item.id})" class="text-amber-600 hover:text-amber-800 text-xs font-semibold">Edit</button>
                         <button onclick="deleteRecord('purchases', ${item.id})" class="text-rose-600 hover:text-rose-800 text-xs font-semibold">Delete</button>
                     </td>
                 </tr>
             `).join('');
+        }
+
+        function editPurchase(id) {
+            openModal('purchaseModal', id);
         }
 
         function renderExpensesTable(data) {
@@ -741,32 +764,42 @@ function editProduction(id) {
                     <td class="p-3 font-medium text-slate-900">${item.category}</td>
                     <td class="p-3">${item.notes}</td>
                     <td class="p-3 font-bold text-slate-900">$${(item.amount || 0).toFixed(2)}</td>
-                    <td class="p-3 text-right">
+                    <td class="p-3 text-right space-x-2">
+                        <button onclick="editExpense(${item.id})" class="text-amber-600 hover:text-amber-800 text-xs font-semibold">Edit</button>
                         <button onclick="deleteRecord('expenses', ${item.id})" class="text-rose-600 hover:text-rose-800 text-xs font-semibold">Delete</button>
                     </td>
                 </tr>
             `).join('');
         }
 
+        function editExpense(id) {
+            openModal('expenseModal', id);
+        }
+
         function renderLaborTable(data) {
-    const tbody = document.getElementById('labor-table-body');
-    if (data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">No labor payments recorded.</td></tr>`;
-        return;
-    }
-    tbody.innerHTML = data.map(item => `
-        <tr class="hover:bg-slate-50">
-            <td class="p-3">${item.date}</td>
-            <td class="p-3 font-medium text-slate-900">${item.worker}</td>
-            <td class="p-3">${item.days}</td>
-            <td class="p-3 font-bold text-slate-900">$${(item.amount || 0).toFixed(2)}</td>
-            <td class="p-3 text-slate-500">${item.notes || '-'}</td>
-            <td class="p-3 text-right">
-                <button onclick="deleteRecord('labor_payments', ${item.id})" class="text-rose-600 hover:text-rose-800 text-xs font-semibold">Delete</button>
-            </td>
-        </tr>
-    `).join('');
-}
+            const tbody = document.getElementById('labor-table-body');
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">No labor payments recorded.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = data.map(item => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3">${item.date}</td>
+                    <td class="p-3 font-medium text-slate-900">${item.worker}</td>
+                    <td class="p-3">${item.days}</td>
+                    <td class="p-3 font-bold text-slate-900">$${(item.amount || 0).toFixed(2)}</td>
+                    <td class="p-3 text-slate-500">${item.notes || '-'}</td>
+                    <td class="p-3 text-right space-x-2">
+                        <button onclick="editLabor(${item.id})" class="text-amber-600 hover:text-amber-800 text-xs font-semibold">Edit</button>
+                        <button onclick="deleteRecord('labor_payments', ${item.id})" class="text-rose-600 hover:text-rose-800 text-xs font-semibold">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function editLabor(id) {
+            openModal('laborModal', id);
+        }
 
         function renderFinancials(sales, blockets, purchases, expenses, labor) {
     let rev = 0, batchLabor = 0, purCost = 0, expCost = 0, laborPay = 0;
