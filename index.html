@@ -242,12 +242,56 @@
 
         <!-- LABOR VIEW -->
         <section id="view-labor" class="hidden space-y-6">
-            <div class="flex justify-between items-center">
-                <h2 class="text-xl font-bold text-slate-900">Daily Labor & Payroll</h2>
-                <button onclick="openModal('laborModal')" class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-4 py-2 rounded-xl text-sm transition shadow-sm">+ Pay Daily Labor</button>
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">Daily Labor & Payroll</h2>
+                    <p class="text-xs text-slate-500">Reconcile blocks produced & earned labor cost vs. payments disbursed per worker/crew</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="openModal('laborModal')" class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-4 py-2 rounded-xl text-sm transition shadow-sm whitespace-nowrap">+ Pay Daily Labor</button>
+                </div>
             </div>
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                <div class="overflow-x-auto">
+
+            <!-- Worker Production vs Payment Summary Card -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900">Crew Production vs. Payment Reconciliation Summary</h3>
+                        <p class="text-xs text-slate-500">Compares total blocks produced & labor cost earned vs. total payments made per crew member.</p>
+                    </div>
+                    <!-- Worker Filter Dropdown -->
+                    <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs">
+                        <span class="font-semibold text-slate-500">Filter Worker:</span>
+                        <select id="labor-worker-filter" onchange="filterLaborByWorker()" class="bg-transparent text-slate-800 font-medium outline-none cursor-pointer">
+                            <option value="">All Workers / Crews</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Summary Table -->
+                <div class="overflow-x-auto border border-slate-100 rounded-xl">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-slate-100 text-slate-700 uppercase text-xs">
+                            <tr>
+                                <th class="p-3">Worker / Crew Name</th>
+                                <th class="p-3">Batches Logged</th>
+                                <th class="p-3">Total Blocks Produced</th>
+                                <th class="p-3">Labor Earned ($)</th>
+                                <th class="p-3">Total Payments ($)</th>
+                                <th class="p-3">Outstanding Balance ($)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="labor-summary-table-body" class="divide-y divide-slate-200">
+                            <tr><td colspan="6" class="p-4 text-center text-slate-400">Loading worker payroll summary...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Labor Payment History Ledger -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden p-6 space-y-3">
+                <h3 class="text-lg font-bold text-slate-900">Labor Payment Transactions History</h3>
+                <div class="overflow-x-auto border border-slate-100 rounded-xl">
                     <table class="w-full text-left text-sm text-slate-600">
                         <thead class="bg-slate-100 text-slate-700 uppercase text-xs">
                         <tr>
@@ -615,6 +659,7 @@
                 renderPurchasesTable(globalPurchasesData);
                 renderExpensesTable(globalExpensesData);
                 renderLaborTable(globalLaborData);
+                renderLaborSummaryTable();
                 renderFinancials(globalSalesData, globalProductionData, globalPurchasesData, globalExpensesData, globalLaborData);
             } catch (err) {
                 console.error("Cloud fetch failed:", err);
@@ -776,13 +821,120 @@
             openModal('expenseModal', id);
         }
 
+        function filterLaborByWorker() {
+            renderLaborSummaryTable();
+            renderLaborTable(globalLaborData);
+        }
+
+        function renderLaborSummaryTable() {
+            const tbody = document.getElementById('labor-summary-table-body');
+            const filterSelect = document.getElementById('labor-worker-filter');
+            const selectedWorkerFilter = filterSelect ? filterSelect.value : '';
+
+            const workerMap = {};
+
+            function getWorker(name) {
+                const cleanName = (name || '').trim();
+                if (!cleanName) return null;
+                const key = cleanName.toLowerCase();
+                if (!workerMap[key]) {
+                    workerMap[key] = {
+                        displayName: cleanName,
+                        batchesCount: 0,
+                        totalBlocks: 0,
+                        laborEarned: 0,
+                        totalPaid: 0
+                    };
+                }
+                return workerMap[key];
+            }
+
+            // Aggregate production data (blockets)
+            (globalProductionData || []).forEach(b => {
+                if (b.produced_by) {
+                    const w = getWorker(b.produced_by);
+                    if (w) {
+                        w.batchesCount += 1;
+                        w.totalBlocks += Number(b.net || 0);
+                        w.laborEarned += Number(b.labor || 0);
+                    }
+                }
+            });
+
+            // Aggregate labor payment data
+            (globalLaborData || []).forEach(l => {
+                if (l.worker) {
+                    const w = getWorker(l.worker);
+                    if (w) {
+                        w.totalPaid += Number(l.amount || 0);
+                    }
+                }
+            });
+
+            // Populate/update worker dropdown options
+            if (filterSelect) {
+                const currentVal = filterSelect.value;
+                const sortedNames = Object.values(workerMap).map(w => w.displayName).sort();
+                let optionsHtml = `<option value="">All Workers / Crews</option>`;
+                sortedNames.forEach(name => {
+                    optionsHtml += `<option value="${name}" ${name === currentVal ? 'selected' : ''}>${name}</option>`;
+                });
+                filterSelect.innerHTML = optionsHtml;
+            }
+
+            let workers = Object.values(workerMap);
+
+            if (selectedWorkerFilter) {
+                workers = workers.filter(w => w.displayName.toLowerCase() === selectedWorkerFilter.toLowerCase());
+            }
+
+            if (workers.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">No worker production or payment data logged yet.</td></tr>`;
+                return;
+            }
+
+            // Sort by total blocks produced descending
+            workers.sort((a, b) => b.totalBlocks - a.totalBlocks);
+
+            tbody.innerHTML = workers.map(w => {
+                const balance = w.laborEarned - w.totalPaid;
+                let balanceBadge = '';
+                if (balance > 0) {
+                    balanceBadge = `<span class="px-2.5 py-1 bg-amber-100 text-amber-800 rounded-lg font-bold text-xs inline-block">Owed: $${balance.toFixed(2)}</span>`;
+                } else if (balance < 0) {
+                    balanceBadge = `<span class="px-2.5 py-1 bg-rose-100 text-rose-800 rounded-lg font-bold text-xs inline-block">Overpaid: $${Math.abs(balance).toFixed(2)}</span>`;
+                } else {
+                    balanceBadge = `<span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-lg font-bold text-xs inline-block">Settled: $0.00</span>`;
+                }
+
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3 font-semibold text-slate-900">${w.displayName}</td>
+                        <td class="p-3">${w.batchesCount}</td>
+                        <td class="p-3 font-medium text-slate-800">${w.totalBlocks.toLocaleString()} units</td>
+                        <td class="p-3 font-semibold text-emerald-700">$${w.laborEarned.toFixed(2)}</td>
+                        <td class="p-3 font-semibold text-slate-900">$${w.totalPaid.toFixed(2)}</td>
+                        <td class="p-3">${balanceBadge}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
         function renderLaborTable(data) {
+            const filterSelect = document.getElementById('labor-worker-filter');
+            const selectedWorker = filterSelect ? filterSelect.value : '';
+
+            let filteredData = data;
+            if (selectedWorker) {
+                filteredData = data.filter(l => (l.worker || '').trim().toLowerCase() === selectedWorker.trim().toLowerCase());
+            }
+
             const tbody = document.getElementById('labor-table-body');
-            if (data.length === 0) {
+            if (filteredData.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">No labor payments recorded.</td></tr>`;
                 return;
             }
-            tbody.innerHTML = data.map(item => `
+            tbody.innerHTML = filteredData.map(item => `
                 <tr class="hover:bg-slate-50">
                     <td class="p-3">${item.date}</td>
                     <td class="p-3 font-medium text-slate-900">${item.worker}</td>
