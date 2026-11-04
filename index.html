@@ -443,13 +443,13 @@
 
         async function saveModalData() {
             let tableName = currentEditingStore;
-if (tableName === 'productionModal') tableName = 'blockets';
-if (tableName === 'saleModal') tableName = 'sales';
-if (tableName === 'purchaseModal') tableName = 'purchases';
-if (tableName === 'expenseModal') tableName = 'expenses';
-if (tableName === 'laborModal') tableName = 'labor_payments';
+            if (tableName === 'productionModal') tableName = 'blockets';
+            if (tableName === 'saleModal') tableName = 'sales';
+            if (tableName === 'purchaseModal') tableName = 'purchases';
+            if (tableName === 'expenseModal') tableName = 'expenses';
+            if (tableName === 'laborModal') tableName = 'labor_payments';
 
-let obj = {};
+            let obj = {};
             if (currentEditingStore === 'productionModal') {
                 obj = {
                     date: document.getElementById('p-date').value,
@@ -477,7 +477,6 @@ let obj = {};
                     supplier: document.getElementById('pur-supp').value,
                     cost: Number(document.getElementById('pur-cost').value)
                 };
-            }
             } else if (currentEditingStore === 'expenseModal') {
                 obj = {
                     date: document.getElementById('e-date').value,
@@ -485,16 +484,23 @@ let obj = {};
                     notes: document.getElementById('e-notes').value,
                     amount: Number(document.getElementById('e-amt').value)
                 };
+            } else if (currentEditingStore === 'laborModal') {
+                obj = {
+                    date: document.getElementById('l-date').value,
+                    worker: document.getElementById('l-worker').value,
+                    days: Number(document.getElementById('l-days').value),
+                    amount: Number(document.getElementById('l-amt').value),
+                    notes: document.getElementById('l-notes').value
+                };
             }
 
-            const { error } = await supabaseClient.from(tableName).insert([obj]);
-
-            if (error) {
-                console.error("Error inserting record:", error);
-                alert("Failed to save to cloud. Check Supabase RLS policies.");
-            } else {
+            try {
+                const { error } = await supabaseClient.from(tableName).insert([obj]);
+                if (error) throw error;
                 closeModal();
                 loadAllData();
+            } catch (err) {
+                alert("Error saving record: " + err.message);
             }
         }
 
