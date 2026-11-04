@@ -615,7 +615,7 @@
         function renderProductionTable(data) {
     const tbody = document.getElementById('production-table-body');
     if (data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">No production logs recorded yet.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400">No production logs recorded yet.</td></tr>`;
         return;
     }
     tbody.innerHTML = data.map(item => `
