@@ -520,25 +520,18 @@
                             <div><label class="text-xs font-semibold text-slate-600">Breakage</label><input type="number" id="p-break" oninput="calculateProductionLabor()" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.breakage ?? 0}"></div>
                         </div>
 
-                        <!-- Labor Rate per Block -->
-                        <div class="bg-amber-50/60 p-3 rounded-xl border border-amber-200/80 space-y-2">
-                            <div class="flex items-center justify-between">
-                                <label class="text-xs font-bold text-slate-800">Labor Rate per Block (ETB / $)</label>
-                                <span class="text-[10px] text-amber-700 font-medium">4, 5, 6 ETB or Custom</span>
-                            </div>
-                            <div class="grid grid-cols-2 gap-2">
-                                <div>
-                                    <select id="p-rate-preset" onchange="handleLaborRatePresetChange()" class="w-full p-2 border rounded-xl text-sm bg-white font-medium">
-                                        <option value="4" ${initialRate === 4 ? 'selected' : ''}>4 ETB / block</option>
-                                        <option value="5" ${initialRate === 5 ? 'selected' : ''}>5 ETB / block</option>
-                                        <option value="6" ${initialRate === 6 ? 'selected' : ''}>6 ETB / block</option>
-                                        <option value="custom" ${![4, 5, 6].includes(initialRate) ? 'selected' : ''}>Custom Rate...</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <input type="number" id="p-rate" step="0.1" oninput="calculateProductionLabor()" class="w-full p-2 border rounded-xl text-sm bg-white font-semibold text-slate-900" value="${initialRate}" placeholder="Rate per block">
+                        <!-- Single Labor Rate Input Field -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="text-xs font-semibold text-slate-600">Labor Rate per Block ($ / ETB)</label>
+                                <div class="flex items-center gap-1">
+                                    <span class="text-[10px] text-slate-400 font-medium mr-1">Presets:</span>
+                                    <button type="button" onclick="setLaborRate(4)" class="px-2 py-0.5 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition">4</button>
+                                    <button type="button" onclick="setLaborRate(5)" class="px-2 py-0.5 text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold rounded-lg transition">5</button>
+                                    <button type="button" onclick="setLaborRate(6)" class="px-2 py-0.5 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition">6</button>
                                 </div>
                             </div>
+                            <input type="number" id="p-rate" step="0.01" oninput="calculateProductionLabor()" class="w-full p-2 border rounded-xl text-sm font-semibold text-slate-900 bg-white" value="${initialRate}" placeholder="Enter rate per block">
                         </div>
 
                         <div>
@@ -769,15 +762,12 @@
             }
         }
 
-        function handleLaborRatePresetChange() {
-            const preset = document.getElementById('p-rate-preset')?.value;
+        function setLaborRate(val) {
             const rateInput = document.getElementById('p-rate');
-            if (!preset || !rateInput) return;
-
-            if (preset !== 'custom') {
-                rateInput.value = preset;
+            if (rateInput) {
+                rateInput.value = val;
+                calculateProductionLabor();
             }
-            calculateProductionLabor();
         }
 
         function calculateProductionLabor() {
@@ -795,7 +785,7 @@
             const calcInfo = document.getElementById('p-labor-calc-info');
             if (calcInfo) {
                 if (net > 0 && rate > 0) {
-                    calcInfo.innerText = `Calculated: ${net.toLocaleString()} net blocks × ${rate} ETB/block = $${totalLabor.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                    calcInfo.innerText = `Calculated: ${net.toLocaleString()} net blocks × ${rate} = $${totalLabor.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
                 } else {
                     calcInfo.innerText = `Enter yield and rate to auto-calculate labor earned.`;
                 }
