@@ -710,6 +710,12 @@
                 if (currentEditingId && globalPurchasesData) {
                     item = globalPurchasesData.find(p => Number(p.id) === Number(currentEditingId)) || {};
                 }
+
+                let initialUnitPrice = '';
+                if (item.qty && item.cost) {
+                    initialUnitPrice = Math.round((item.cost / item.qty) * 100) / 100;
+                }
+
                 content.innerHTML = `
                     <div class="space-y-3">
                         <div><label class="text-xs font-semibold text-slate-600">Date</label><input type="date" id="pur-date" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.date || new Date().toISOString().split('T')[0]}"></div>
@@ -727,7 +733,7 @@
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="text-xs font-semibold text-slate-600">Quantity</label>
-                                <input type="number" id="pur-qty" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.qty ?? ''}" placeholder="0">
+                                <input type="number" id="pur-qty" oninput="calculatePurchaseTotal()" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.qty ?? ''}" placeholder="0">
                             </div>
                             <div>
                                 <label class="text-xs font-semibold text-slate-600">Unit of Measurement</label>
@@ -741,10 +747,19 @@
                                 </select>
                             </div>
                         </div>
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600">Unit Price ($ / ETB)</label>
+                            <input type="number" id="pur-unit-price" step="0.01" oninput="calculatePurchaseTotal()" class="w-full mt-1 p-2 border rounded-xl text-sm font-medium bg-white" value="${initialUnitPrice}" placeholder="Price per unit">
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600">Total Cost ($)</label>
+                            <input type="number" id="pur-cost" step="0.01" class="w-full mt-1 p-2 border rounded-xl text-sm font-bold text-emerald-800 bg-emerald-50/50" value="${item.cost ?? ''}" placeholder="0.00">
+                            <p id="pur-calc-info" class="text-[11px] text-slate-500 mt-1 font-medium italic">Enter quantity and unit price to auto-calculate total cost.</p>
+                        </div>
                         <div><label class="text-xs font-semibold text-slate-600">Supplier</label><input type="text" id="pur-supp" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.supplier || ''}" placeholder="Supplier Name"></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Total Cost ($)</label><input type="number" id="pur-cost" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.cost ?? ''}" placeholder="0.00"></div>
                     </div>
                 `;
+                setTimeout(calculatePurchaseTotal, 50);
             } else if (type === 'expenseModal') {
                 title.innerText = currentEditingId ? "Edit Operational Expense" : "Add Operational Expense";
                 let item = {};
@@ -933,6 +948,29 @@
                     calcInfo.innerText = `Calculated: ${net.toLocaleString()} net blocks × ${rate} = $${totalLabor.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
                 } else {
                     calcInfo.innerText = `Enter yield and rate to auto-calculate labor earned.`;
+                }
+            }
+        }
+
+        function calculatePurchaseTotal() {
+            const qty = Number(document.getElementById('pur-qty')?.value || 0);
+            const unitPrice = Number(document.getElementById('pur-unit-price')?.value || 0);
+            const totalCostInput = document.getElementById('pur-cost');
+            const calcInfo = document.getElementById('pur-calc-info');
+
+            const total = qty * unitPrice;
+
+            if (totalCostInput) {
+                if (qty > 0 && unitPrice > 0) {
+                    totalCostInput.value = total.toFixed(2);
+                }
+            }
+
+            if (calcInfo) {
+                if (qty > 0 && unitPrice > 0) {
+                    calcInfo.innerText = `Calculated: ${qty.toLocaleString()} units × $${unitPrice.toFixed(2)} = $${total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                } else {
+                    calcInfo.innerText = `Enter quantity and unit price to auto-calculate total cost.`;
                 }
             }
         }
