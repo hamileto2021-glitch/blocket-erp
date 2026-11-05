@@ -118,25 +118,25 @@
         </section>
 
         <!-- PRODUCTION VIEW -->
-<section id="view-production" class="hidden space-y-6">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h2 class="text-xl font-bold text-slate-900">Production Batches</h2>
-        <div class="flex items-center gap-2 w-full sm:w-auto">
-            <!-- Combined Filter Bar -->
-            <div class="flex flex-wrap items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5 shadow-sm">
-                <span class="text-xs font-semibold text-slate-500">Filter:</span>
-                <input type="date" id="production-date-filter" onchange="filterProductionTable()" class="text-xs text-slate-700 bg-transparent outline-none cursor-pointer">
-                <select id="production-size-filter" onchange="filterProductionTable()" class="text-xs text-slate-700 bg-transparent outline-none border-l pl-2 cursor-pointer">
-                    <option value="">All Sizes</option>
-                    <option value="10cm">10cm</option>
-                    <option value="15cm">15cm</option>
-                    <option value="20cm">20cm</option>
-                </select>
-                <button onclick="clearProductionFilter()" class="ml-2 text-xs text-rose-600 hover:text-rose-800 font-semibold">Clear</button>
+        <section id="view-production" class="hidden space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <h2 class="text-xl font-bold text-slate-900">Production Batches</h2>
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <!-- Combined Filter Bar -->
+                    <div class="flex flex-wrap items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5 shadow-sm">
+                        <span class="text-xs font-semibold text-slate-500">Filter:</span>
+                        <input type="date" id="production-date-filter" onchange="filterProductionTable()" class="text-xs text-slate-700 bg-transparent outline-none cursor-pointer">
+                        <select id="production-size-filter" onchange="filterProductionTable()" class="text-xs text-slate-700 bg-transparent outline-none border-l pl-2 cursor-pointer">
+                            <option value="">All Sizes</option>
+                            <option value="10cm">10cm</option>
+                            <option value="15cm">15cm</option>
+                            <option value="20cm">20cm</option>
+                        </select>
+                        <button onclick="clearProductionFilter()" class="ml-2 text-xs text-rose-600 hover:text-rose-800 font-semibold">Clear</button>
+                    </div>
+                    <button onclick="openModal('productionModal')" class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-4 py-2 rounded-xl text-sm transition shadow-sm whitespace-nowrap">+ Log Production</button>
+                </div>
             </div>
-            <button onclick="openModal('productionModal')" class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-4 py-2 rounded-xl text-sm transition shadow-sm whitespace-nowrap">+ Log Production</button>
-        </div>
-    </div>
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm text-slate-600">
@@ -148,11 +148,12 @@
                                 <th class="p-3">Breakage</th>
                                 <th class="p-3">Net Produced</th>
                                 <th class="p-3">Labor Cost</th>
+                                <th class="p-3">Produced By</th>
                                 <th class="p-3 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="production-table-body" class="divide-y divide-slate-200">
-                            <tr><td colspan="7" class="p-4 text-center text-slate-400">No production logs recorded yet.</td></tr>
+                            <tr><td colspan="8" class="p-4 text-center text-slate-400">No production logs recorded yet.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -388,6 +389,14 @@
         let currentEditingId = null;
         let baseStock = { '10cm': 0, '15cm': 0, '20cm': 0 };
 
+        let globalProductionData = [];
+        let globalSalesData = [];
+        let globalPurchasesData = [];
+        let globalExpensesData = [];
+        let globalLaborData = [];
+
+        let defaultCrewList = ['Crew A', 'Crew B', 'Mr X', 'Mr Y'];
+
         // Network Listener Integration
         window.addEventListener('online', updateOnlineStatus);
         window.addEventListener('offline', updateOnlineStatus);
@@ -410,14 +419,78 @@
         }
 
         function switchTab(tabId) {
-    ['dashboard', 'production', 'sales', 'purchases', 'expenses', 'labor', 'financials', 'reports', 'database'].forEach(t => {
-        document.getElementById(`view-${t}`).classList.add('hidden');
-        document.getElementById(`nav-${t}`).className = "px-3 py-1.5 rounded-lg font-medium text-slate-300 hover:text-white transition";
-    });
-    document.getElementById(`view-${tabId}`).classList.remove('hidden');
-    document.getElementById(`nav-${tabId}`).className = "px-3 py-1.5 rounded-lg font-medium bg-amber-500 text-slate-900 transition";
-}
+            ['dashboard', 'production', 'sales', 'purchases', 'expenses', 'labor', 'financials', 'reports', 'database'].forEach(t => {
+                document.getElementById(`view-${t}`).classList.add('hidden');
+                document.getElementById(`nav-${t}`).className = "px-3 py-1.5 rounded-lg font-medium text-slate-300 hover:text-white transition";
+            });
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+            document.getElementById(`nav-${tabId}`).className = "px-3 py-1.5 rounded-lg font-medium bg-amber-500 text-slate-900 transition";
+        }
 
+        // --- CREW DROPDOWN HELPERS ---
+        function getCrewList() {
+            const set = new Set(defaultCrewList);
+            (globalProductionData || []).forEach(b => {
+                if (b.produced_by && b.produced_by.trim()) set.add(b.produced_by.trim());
+            });
+            (globalLaborData || []).forEach(l => {
+                if (l.worker && l.worker.trim()) set.add(l.worker.trim());
+            });
+            return Array.from(set).sort();
+        }
+
+        function buildCrewDropdownHtml(selectId, customInputId, currentValue = '', labelText = 'Produced By (Operator / Crew)') {
+            const crews = getCrewList();
+            const trimmedCurrent = (currentValue || '').trim();
+            const isCustom = trimmedCurrent && !crews.includes(trimmedCurrent);
+
+            let optionsHtml = `<option value="">-- Select ${labelText} --</option>`;
+            crews.forEach(c => {
+                const selected = (c === trimmedCurrent) ? 'selected' : '';
+                optionsHtml += `<option value="${c}" ${selected}>${c}</option>`;
+            });
+
+            const newSelected = isCustom ? 'selected' : '';
+            optionsHtml += `<option value="__new__" ${newSelected}>+ Register New Crew / Worker...</option>`;
+
+            const customVal = isCustom ? trimmedCurrent : '';
+            const customClass = isCustom ? '' : 'hidden';
+
+            return `
+                <div>
+                    <label class="text-xs font-semibold text-slate-600">${labelText}</label>
+                    <select id="${selectId}" onchange="handleCrewSelectChange('${selectId}', '${customInputId}')" class="w-full mt-1 p-2 border rounded-xl text-sm bg-white font-medium">
+                        ${optionsHtml}
+                    </select>
+                    <input type="text" id="${customInputId}" class="${customClass} w-full mt-1.5 p-2 border rounded-xl text-sm bg-amber-50/50 font-medium" value="${customVal}" placeholder="Type new worker / crew name...">
+                </div>
+            `;
+        }
+
+        function handleCrewSelectChange(selectId, customInputId) {
+            const selectEl = document.getElementById(selectId);
+            const customEl = document.getElementById(customInputId);
+            if (!selectEl || !customEl) return;
+
+            if (selectEl.value === '__new__') {
+                customEl.classList.remove('hidden');
+                customEl.focus();
+            } else {
+                customEl.classList.add('hidden');
+            }
+        }
+
+        function getSelectedCrewValue(selectId, customInputId) {
+            const selectEl = document.getElementById(selectId);
+            const customEl = document.getElementById(customInputId);
+            if (!selectEl) return '';
+            if (selectEl.value === '__new__') {
+                return customEl ? customEl.value.trim() : '';
+            }
+            return selectEl.value.trim();
+        }
+
+        // --- MODAL MANAGEMENT ---
         function openModal(type, id = null) {
             currentEditingStore = type;
             currentEditingId = id; // Ensure this is set first
@@ -474,7 +547,7 @@
                             <p id="p-labor-calc-info" class="text-[11px] text-slate-500 mt-1 font-medium italic">Enter yield and rate to auto-calculate labor earned.</p>
                         </div>
 
-                        <div><label class="text-xs font-semibold text-slate-600">Produced By (Operator / Crew)</label><input type="text" id="p-operator" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.produced_by || ''}" placeholder="Worker / Crew Name (e.g. Mr X)"></div>
+                        ${buildCrewDropdownHtml('p-operator-select', 'p-operator-custom', item.produced_by || '', 'Produced By (Operator / Crew)')}
                     </div>
                 `;
                 setTimeout(calculateProductionLabor, 50);
@@ -557,7 +630,7 @@
                 content.innerHTML = `
                     <div class="space-y-3">
                         <div><label class="text-xs font-semibold text-slate-600">Date</label><input type="date" id="l-date" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.date || new Date().toISOString().split('T')[0]}"></div>
-                        <div><label class="text-xs font-semibold text-slate-600">Worker / Crew Name</label><input type="text" id="l-worker" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.worker || ''}" placeholder="Worker Name"></div>
+                        ${buildCrewDropdownHtml('l-worker-select', 'l-worker-custom', item.worker || '', 'Worker / Crew Name')}
                         <div><label class="text-xs font-semibold text-slate-600">Days Worked</label><input type="number" id="l-days" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.days ?? 1}" step="0.5"></div>
                         <div><label class="text-xs font-semibold text-slate-600">Total Amount Paid ($)</label><input type="number" id="l-amt" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.amount ?? ''}" placeholder="0.00"></div>
                         <div><label class="text-xs font-semibold text-slate-600">Notes</label><input type="text" id="l-notes" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.notes || ''}" placeholder="Optional description"></div>
@@ -590,7 +663,7 @@
                     breakage: Number(document.getElementById('p-break').value),
                     labor: Number(document.getElementById('p-labor').value),
                     net: Number(document.getElementById('p-gross').value) - Number(document.getElementById('p-break').value),
-                    produced_by: document.getElementById('p-operator').value
+                    produced_by: getSelectedCrewValue('p-operator-select', 'p-operator-custom')
                 };
             } else if (currentEditingStore === 'saleModal') {
                 obj = {
@@ -620,7 +693,7 @@
             } else if (currentEditingStore === 'laborModal') {
                 obj = {
                     date: document.getElementById('l-date').value,
-                    worker: document.getElementById('l-worker').value,
+                    worker: getSelectedCrewValue('l-worker-select', 'l-worker-custom'),
                     days: Number(document.getElementById('l-days').value),
                     amount: Number(document.getElementById('l-amt').value),
                     notes: document.getElementById('l-notes').value
@@ -667,20 +740,14 @@
             }
         }
 
-        let globalProductionData = [];
-        let globalSalesData = [];
-        let globalPurchasesData = [];
-        let globalExpensesData = [];
-        let globalLaborData = [];
-
         async function loadAllData() {
             try {
                 const [{ data: blockets }, { data: sales }, { data: purchases }, { data: expenses }, { data: labor }] = await Promise.all([
-                    supabaseClient.from('blockets').select('*'),
-                    supabaseClient.from('sales').select('*'),
-                    supabaseClient.from('purchases').select('*'),
-                    supabaseClient.from('expenses').select('*'),
-                    supabaseClient.from('labor_payments').select('*')
+                    supabaseClient.from('blockets').select('*').order('date', { ascending: false }).order('id', { ascending: false }),
+                    supabaseClient.from('sales').select('*').order('date', { ascending: false }).order('id', { ascending: false }),
+                    supabaseClient.from('purchases').select('*').order('date', { ascending: false }).order('id', { ascending: false }),
+                    supabaseClient.from('expenses').select('*').order('date', { ascending: false }).order('id', { ascending: false }),
+                    supabaseClient.from('labor_payments').select('*').order('date', { ascending: false }).order('id', { ascending: false })
                 ]);
 
                 globalProductionData = blockets || [];
@@ -790,11 +857,20 @@
 
         function renderProductionTable(data) {
             const tbody = document.getElementById('production-table-body');
-            if (data.length === 0) {
+            if (!data || data.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400">No production logs recorded yet.</td></tr>`;
                 return;
             }
-            tbody.innerHTML = data.map(item => `
+
+            // Sort from latest to oldest
+            const sorted = [...data].sort((a, b) => {
+                if ((b.date || '') !== (a.date || '')) {
+                    return (b.date || '').localeCompare(a.date || '');
+                }
+                return Number(b.id || 0) - Number(a.id || 0);
+            });
+
+            tbody.innerHTML = sorted.map(item => `
                 <tr class="hover:bg-slate-50">
                     <td class="p-3">${item.date}</td>
                     <td class="p-3 font-medium text-slate-900">${item.size}</td>
@@ -802,7 +878,7 @@
                     <td class="p-3 text-rose-600">${item.breakage}</td>
                     <td class="p-3 font-bold text-slate-900">${item.net}</td>
                     <td class="p-3">$${(item.labor || 0).toFixed(2)}</td>
-                    <td class="p-3 text-xs text-slate-500">${item.produced_by || '-'}</td>
+                    <td class="p-3 text-xs text-slate-600 font-semibold">${item.produced_by || '-'}</td>
                     <td class="p-3 text-right space-x-2">
                         <button onclick="editProduction(${item.id})" class="text-amber-600 hover:text-amber-800 font-semibold">Edit</button>
                         <button onclick="deleteRecord('blockets', ${item.id})" class="text-rose-600 hover:text-rose-800 font-semibold">Delete</button>
@@ -817,11 +893,19 @@
 
         function renderSalesTable(data) {
             const tbody = document.getElementById('sales-table-body');
-            if (data.length === 0) {
+            if (!data || data.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">No sales recorded yet.</td></tr>`;
                 return;
             }
-            tbody.innerHTML = data.map(item => `
+
+            const sorted = [...data].sort((a, b) => {
+                if ((b.date || '') !== (a.date || '')) {
+                    return (b.date || '').localeCompare(a.date || '');
+                }
+                return Number(b.id || 0) - Number(a.id || 0);
+            });
+
+            tbody.innerHTML = sorted.map(item => `
                 <tr class="hover:bg-slate-50">
                     <td class="p-3">${item.date}</td>
                     <td class="p-3 font-medium text-slate-900">${item.customer}</td>
@@ -843,11 +927,19 @@
 
         function renderPurchasesTable(data) {
             const tbody = document.getElementById('purchases-table-body');
-            if (data.length === 0) {
+            if (!data || data.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">No raw material purchases recorded.</td></tr>`;
                 return;
             }
-            tbody.innerHTML = data.map(item => `
+
+            const sorted = [...data].sort((a, b) => {
+                if ((b.date || '') !== (a.date || '')) {
+                    return (b.date || '').localeCompare(a.date || '');
+                }
+                return Number(b.id || 0) - Number(a.id || 0);
+            });
+
+            tbody.innerHTML = sorted.map(item => `
                 <tr class="hover:bg-slate-50">
                     <td class="p-3">${item.date}</td>
                     <td class="p-3 font-medium text-slate-900">${item.material}</td>
@@ -868,11 +960,19 @@
 
         function renderExpensesTable(data) {
             const tbody = document.getElementById('expenses-table-body');
-            if (data.length === 0) {
+            if (!data || data.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">No operational expenses recorded.</td></tr>`;
                 return;
             }
-            tbody.innerHTML = data.map(item => `
+
+            const sorted = [...data].sort((a, b) => {
+                if ((b.date || '') !== (a.date || '')) {
+                    return (b.date || '').localeCompare(a.date || '');
+                }
+                return Number(b.id || 0) - Number(a.id || 0);
+            });
+
+            tbody.innerHTML = sorted.map(item => `
                 <tr class="hover:bg-slate-50">
                     <td class="p-3">${item.date}</td>
                     <td class="p-3 font-medium text-slate-900">${item.category}</td>
@@ -993,9 +1093,9 @@
             const filterSelect = document.getElementById('labor-worker-filter');
             const selectedWorker = filterSelect ? filterSelect.value : '';
 
-            let filteredData = data;
+            let filteredData = data || [];
             if (selectedWorker) {
-                filteredData = data.filter(l => (l.worker || '').trim().toLowerCase() === selectedWorker.trim().toLowerCase());
+                filteredData = (data || []).filter(l => (l.worker || '').trim().toLowerCase() === selectedWorker.trim().toLowerCase());
             }
 
             const tbody = document.getElementById('labor-table-body');
@@ -1003,7 +1103,15 @@
                 tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">No labor payments recorded.</td></tr>`;
                 return;
             }
-            tbody.innerHTML = filteredData.map(item => `
+
+            const sorted = [...filteredData].sort((a, b) => {
+                if ((b.date || '') !== (a.date || '')) {
+                    return (b.date || '').localeCompare(a.date || '');
+                }
+                return Number(b.id || 0) - Number(a.id || 0);
+            });
+
+            tbody.innerHTML = sorted.map(item => `
                 <tr class="hover:bg-slate-50">
                     <td class="p-3">${item.date}</td>
                     <td class="p-3 font-medium text-slate-900">${item.worker}</td>
@@ -1023,23 +1131,23 @@
         }
 
         function renderFinancials(sales, blockets, purchases, expenses, labor) {
-    let rev = 0, batchLabor = 0, purCost = 0, expCost = 0, laborPay = 0;
-    sales.forEach(s => rev += (s.total || 0));
-    blockets.forEach(b => batchLabor += (b.labor || 0));
-    purchases.forEach(p => purCost += (p.cost || 0));
-    expenses.forEach(e => expCost += (e.amount || 0));
-    if (labor) labor.forEach(l => laborPay += (l.amount || 0));
+            let rev = 0, batchLabor = 0, purCost = 0, expCost = 0, laborPay = 0;
+            sales.forEach(s => rev += (s.total || 0));
+            blockets.forEach(b => batchLabor += (b.labor || 0));
+            purchases.forEach(p => purCost += (p.cost || 0));
+            expenses.forEach(e => expCost += (e.amount || 0));
+            if (labor) labor.forEach(l => laborPay += (l.amount || 0));
 
-    const totalLabor = batchLabor + laborPay;
-    const net = rev - (totalLabor + purCost + expCost);
+            const totalLabor = batchLabor + laborPay;
+            const net = rev - (totalLabor + purCost + expCost);
 
-    document.getElementById('fin-revenue').innerText = `$${rev.toFixed(2)}`;
-    document.getElementById('fin-labor').innerText = `$${totalLabor.toFixed(2)}`;
-    document.getElementById('fin-purchases').innerText = `$${purCost.toFixed(2)}`;
-    document.getElementById('fin-expenses').innerText = `$${expCost.toFixed(2)}`;
-    document.getElementById('fin-net').innerText = `$${net.toFixed(2)}`;
-    document.getElementById('dash-profit').innerText = `$${net.toFixed(2)}`;
-}
+            document.getElementById('fin-revenue').innerText = `$${rev.toFixed(2)}`;
+            document.getElementById('fin-labor').innerText = `$${totalLabor.toFixed(2)}`;
+            document.getElementById('fin-purchases').innerText = `$${purCost.toFixed(2)}`;
+            document.getElementById('fin-expenses').innerText = `$${expCost.toFixed(2)}`;
+            document.getElementById('fin-net').innerText = `$${net.toFixed(2)}`;
+            document.getElementById('dash-profit').innerText = `$${net.toFixed(2)}`;
+        }
 
         function exportCSV(type) {
             alert("CSV export feature available.");
