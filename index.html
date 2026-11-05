@@ -739,11 +739,15 @@
                                 <label class="text-xs font-semibold text-slate-600">Unit of Measurement</label>
                                 <select id="pur-unit" class="w-full mt-1 p-2 border rounded-xl text-sm">
                                     <option value="Bags" ${item.unit === 'Bags' ? 'selected' : ''}>Bags</option>
+                                    <option value="Pcs" ${item.unit === 'Pcs' ? 'selected' : ''}>Pcs (Pieces)</option>
+                                    <option value="Kuntal" ${item.unit === 'Kuntal' ? 'selected' : ''}>Kuntal (Quintal / 100kg)</option>
                                     <option value="Tons" ${item.unit === 'Tons' ? 'selected' : ''}>Tons</option>
                                     <option value="Kg" ${item.unit === 'Kg' ? 'selected' : ''}>Kg</option>
                                     <option value="M³" ${item.unit === 'M³' ? 'selected' : ''}>M³ (Cubic Meters)</option>
                                     <option value="Litres" ${item.unit === 'Litres' ? 'selected' : ''}>Litres</option>
+                                    <option value="Truckload / Trip" ${item.unit === 'Truckload / Trip' ? 'selected' : ''}>Truckload / Trip</option>
                                     <option value="Units" ${item.unit === 'Units' ? 'selected' : ''}>Units</option>
+                                    <option value="Other" ${item.unit === 'Other' ? 'selected' : ''}>Other / Custom</option>
                                 </select>
                             </div>
                         </div>
