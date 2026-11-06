@@ -1,1 +1,1 @@
-# blocket-erp
+# HBG Blocket Industry - Concrete Block Manufacturing Suite
