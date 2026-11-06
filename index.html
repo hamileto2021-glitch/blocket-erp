@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blocket Master ERP - Concrete Block Manufacturing</title>
+    <title>HBG Blocket Industry - Concrete Block Manufacturing</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
@@ -47,7 +47,7 @@
         <div class="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl space-y-6 border border-slate-100">
             <div class="text-center space-y-2">
                 <div class="inline-flex bg-amber-500 p-3 rounded-2xl text-slate-900 font-bold text-3xl mb-1 shadow-md">🧱</div>
-                <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Blocket Master ERP</h2>
+                <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">HBG Blocket Industry</h2>
                 <p class="text-xs text-slate-500 font-medium">Concrete Block Manufacturing Suite</p>
             </div>
 
@@ -88,7 +88,7 @@
                 <div class="flex items-center space-x-3">
                     <div class="bg-amber-500 p-2 rounded-lg text-slate-900 font-bold text-xl">🧱</div>
                     <div>
-                        <h1 class="text-lg font-bold tracking-tight">Blocket Master ERP</h1>
+                        <h1 class="text-lg font-bold tracking-tight">HBG Blocket Industry</h1>
                         <p class="text-xs text-slate-400">Concrete Block Manufacturing Suite</p>
                     </div>
                 </div>
@@ -614,7 +614,7 @@
         }
 
         async function handleSignOut() {
-            if (!confirm("Are you sure you want to sign out of Blocket ERP?")) return;
+            if (!confirm("Are you sure you want to sign out of HBG Blocket Industry?")) return;
             currentUserRole = 'admin';
             await supabaseClient.auth.signOut();
         }
