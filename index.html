@@ -42,7 +42,7 @@
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
 
-    <!-- Auth Modal Overlay (Sign In / Sign Up) -->
+    <!-- Auth Modal Overlay (Sign In / Sign Up / View Only) -->
     <div id="auth-container" class="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl space-y-6 border border-slate-100">
             <div class="text-center space-y-2">
@@ -71,6 +71,13 @@
                 <span id="auth-mode-label">Need an account?</span>
                 <button type="button" onclick="toggleAuthMode()" id="auth-toggle-btn" class="text-amber-600 hover:text-amber-700 font-bold underline">Create Account</button>
             </div>
+
+            <div class="pt-2 border-t border-slate-100 text-center space-y-2">
+                <span class="text-xs text-slate-400 block font-medium">Or explore with read-only access:</span>
+                <button type="button" onclick="loginAsViewOnly()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition border border-slate-200 flex items-center justify-center gap-1.5 shadow-sm">
+                    <span>👁️</span> Continue in View-Only Mode
+                </button>
+            </div>
         </div>
     </div>
 
@@ -87,7 +94,7 @@
                 </div>
                 <!-- User Auth Display (Mobile) -->
                 <div id="auth-header-info" class="hidden items-center gap-2 text-xs md:hidden">
-                    <span id="user-email-display-mob" class="text-slate-300 font-medium truncate max-w-[120px]"></span>
+                    <span id="user-role-badge-mob" class="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-lg text-[10px] font-bold">👑 Admin Account</span>
                     <button onclick="handleSignOut()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-rose-400 border border-slate-700 rounded-lg font-semibold transition">Sign Out</button>
                 </div>
             </div>
@@ -108,6 +115,7 @@
 
                 <!-- User Auth Display (Desktop) -->
                 <div id="auth-header-info-dt" class="hidden md:flex items-center gap-2 text-xs border-l border-slate-700 pl-3">
+                    <span id="user-role-badge" class="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-lg text-[10px] font-bold">👑 Admin Account</span>
                     <span id="user-email-display" class="text-slate-300 font-medium"></span>
                     <button onclick="handleSignOut()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-rose-400 border border-slate-700 rounded-lg font-semibold transition">Sign Out</button>
                 </div>
@@ -146,7 +154,7 @@
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-lg font-bold text-slate-900">Current Blocket Inventory (Available = Initial + Production - Sales)</h2>
-                    <button onclick="openBaseStockModal()" class="text-xs bg-slate-100 hover:bg-slate-200 font-semibold px-3 py-1.5 rounded-lg text-slate-700 transition">Adjust Base Stock</button>
+                    <button onclick="openBaseStockModal()" class="action-btn text-xs bg-slate-100 hover:bg-slate-200 font-semibold px-3 py-1.5 rounded-lg text-slate-700 transition">Adjust Base Stock</button>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
@@ -182,7 +190,7 @@
                         </select>
                         <button onclick="clearProductionFilter()" class="ml-2 text-xs text-rose-600 hover:text-rose-800 font-semibold">Clear</button>
                     </div>
-                    <button onclick="openModal('productionModal')" class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-4 py-2 rounded-xl text-sm transition shadow-sm whitespace-nowrap">+ Log Production</button>
+                    <button onclick="openModal('productionModal')" class="action-btn bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-4 py-2 rounded-xl text-sm transition shadow-sm whitespace-nowrap">+ Log Production</button>
                 </div>
             </div>
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -212,7 +220,7 @@
         <section id="view-sales" class="hidden space-y-6">
             <div class="flex justify-between items-center">
                 <h2 class="text-xl font-bold text-slate-900">Sales & Invoices</h2>
-                <button onclick="openModal('saleModal')" class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-4 py-2 rounded-xl text-sm transition shadow-sm">+ New Sale</button>
+                <button onclick="openModal('saleModal')" class="action-btn bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-4 py-2 rounded-xl text-sm transition shadow-sm">+ New Sale</button>
             </div>
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="overflow-x-auto">
@@ -240,7 +248,7 @@
         <section id="view-purchases" class="hidden space-y-6">
             <div class="flex justify-between items-center">
                 <h2 class="text-xl font-bold text-slate-900">Raw Material Procurement</h2>
-                <button onclick="openModal('purchaseModal')" class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-4 py-2 rounded-xl text-sm transition shadow-sm">+ Log Purchase</button>
+                <button onclick="openModal('purchaseModal')" class="action-btn bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-4 py-2 rounded-xl text-sm transition shadow-sm">+ Log Purchase</button>
             </div>
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="overflow-x-auto">
@@ -267,7 +275,7 @@
         <section id="view-expenses" class="hidden space-y-6">
             <div class="flex justify-between items-center">
                 <h2 class="text-xl font-bold text-slate-900">Operational Expenses</h2>
-                <button onclick="openModal('expenseModal')" class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-4 py-2 rounded-xl text-sm transition shadow-sm">+ Add Expense</button>
+                <button onclick="openModal('expenseModal')" class="action-btn bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-4 py-2 rounded-xl text-sm transition shadow-sm">+ Add Expense</button>
             </div>
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="overflow-x-auto">
@@ -297,7 +305,7 @@
                     <p class="text-xs text-slate-500">Reconcile blocks produced & earned labor cost vs. payments disbursed per worker/crew</p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button onclick="openModal('laborModal')" class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-4 py-2 rounded-xl text-sm transition shadow-sm whitespace-nowrap">+ Pay Daily Labor</button>
+                    <button onclick="openModal('laborModal')" class="action-btn bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-4 py-2 rounded-xl text-sm transition shadow-sm whitespace-nowrap">+ Pay Daily Labor</button>
                 </div>
             </div>
 
@@ -445,6 +453,7 @@
 
         let defaultCrewList = ['Crew A', 'Crew B', 'Mr X', 'Mr Y'];
         let authMode = 'signin'; // 'signin' or 'signup'
+        let currentUserRole = 'admin'; // 'admin' or 'viewer'
 
         // Network Listener Integration
         window.addEventListener('online', updateOnlineStatus);
@@ -465,6 +474,58 @@
                 statusText.className = "text-sm font-medium text-amber-700";
                 if (statusDot) statusDot.className = "w-3 h-3 bg-amber-500 rounded-full";
             }
+        }
+
+        // --- ROLE & PERMISSION HANDLERS ---
+        function applyRolePermissions() {
+            const isViewer = currentUserRole === 'viewer';
+
+            // Show or hide action buttons marked with action-btn
+            document.querySelectorAll('.action-btn').forEach(btn => {
+                if (isViewer) {
+                    btn.classList.add('hidden');
+                } else {
+                    btn.classList.remove('hidden');
+                }
+            });
+
+            // Update role badge in header
+            ['user-role-badge', 'user-role-badge-mob'].forEach(id => {
+                const badge = document.getElementById(id);
+                if (badge) {
+                    if (isViewer) {
+                        badge.innerText = '👁️ View-Only Mode';
+                        badge.className = 'px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-lg text-[10px] font-bold';
+                    } else {
+                        badge.innerText = '👑 Admin Account';
+                        badge.className = 'px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-lg text-[10px] font-bold';
+                    }
+                }
+            });
+        }
+
+        function loginAsViewOnly() {
+            currentUserRole = 'viewer';
+            const authContainer = document.getElementById('auth-container');
+            const authHeaderInfo = document.getElementById('auth-header-info');
+            const authHeaderInfoDt = document.getElementById('auth-header-info-dt');
+            const userEmailDisplay = document.getElementById('user-email-display');
+            const userEmailDisplayMob = document.getElementById('user-email-display-mob');
+
+            authContainer.classList.add('hidden');
+            if (authHeaderInfo) {
+                authHeaderInfo.classList.remove('hidden');
+                authHeaderInfo.classList.add('flex');
+            }
+            if (authHeaderInfoDt) {
+                authHeaderInfoDt.classList.remove('hidden');
+                authHeaderInfoDt.classList.add('flex');
+            }
+            if (userEmailDisplay) userEmailDisplay.innerText = 'guest.viewer@blocket.erp';
+            if (userEmailDisplayMob) userEmailDisplayMob.innerText = 'guest.viewer';
+
+            applyRolePermissions();
+            loadAllData();
         }
 
         // --- AUTHENTICATION HANDLERS ---
@@ -513,6 +574,7 @@
                 } else {
                     const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
                     if (error) throw error;
+                    currentUserRole = 'admin';
                 }
             } catch (err) {
                 errorAlert.innerText = err.message || "Authentication failed. Please check your credentials.";
@@ -525,6 +587,7 @@
 
         async function handleSignOut() {
             if (!confirm("Are you sure you want to sign out of Blocket ERP?")) return;
+            currentUserRole = 'admin';
             await supabaseClient.auth.signOut();
         }
 
@@ -537,6 +600,7 @@
                 const userEmailDisplayMob = document.getElementById('user-email-display-mob');
 
                 if (session && session.user) {
+                    currentUserRole = 'admin';
                     authContainer.classList.add('hidden');
                     if (authHeaderInfo) {
                         authHeaderInfo.classList.remove('hidden');
@@ -548,8 +612,9 @@
                     }
                     if (userEmailDisplay) userEmailDisplay.innerText = session.user.email;
                     if (userEmailDisplayMob) userEmailDisplayMob.innerText = session.user.email;
+                    applyRolePermissions();
                     loadAllData();
-                } else {
+                } else if (currentUserRole !== 'viewer') {
                     authContainer.classList.remove('hidden');
                     if (authHeaderInfo) {
                         authHeaderInfo.classList.remove('flex');
@@ -637,6 +702,11 @@
 
         // --- MODAL MANAGEMENT ---
         function openModal(type, id = null) {
+            if (currentUserRole === 'viewer') {
+                alert("Account is in View-Only mode. Creating/editing records is restricted.");
+                return;
+            }
+
             currentEditingStore = type;
             currentEditingId = id; // Ensure this is set first
 
@@ -804,6 +874,11 @@
         }
 
         async function saveModalData() {
+            if (currentUserRole === 'viewer') {
+                alert("Account is in View-Only mode. Changes cannot be saved.");
+                return;
+            }
+
             let tableName = currentEditingStore;
             if (tableName === 'productionModal') tableName = 'blockets';
             if (tableName === 'saleModal') tableName = 'sales';
@@ -883,6 +958,11 @@
         }
 
         async function deleteRecord(tableName, id) {
+            if (currentUserRole === 'viewer') {
+                alert("Account is in View-Only mode. Deleting records is restricted.");
+                return;
+            }
+
             if (!confirm("Are you sure you want to delete this record from the cloud?")) return;
             
             const { error } = await supabaseClient
@@ -1039,6 +1119,8 @@
                 return;
             }
 
+            const isViewer = currentUserRole === 'viewer';
+
             // Sort from latest to oldest
             const sorted = [...data].sort((a, b) => {
                 if ((b.date || '') !== (a.date || '')) {
@@ -1057,8 +1139,10 @@
                     <td class="p-3">$${(item.labor || 0).toFixed(2)}</td>
                     <td class="p-3 text-xs text-slate-600 font-semibold">${item.produced_by || '-'}</td>
                     <td class="p-3 text-right space-x-2">
-                        <button onclick="editProduction(${item.id})" class="text-amber-600 hover:text-amber-800 font-semibold">Edit</button>
-                        <button onclick="deleteRecord('blockets', ${item.id})" class="text-rose-600 hover:text-rose-800 font-semibold">Delete</button>
+                        ${isViewer ? '<span class="text-xs text-slate-400 font-medium italic">Read-Only</span>' : `
+                            <button onclick="editProduction(${item.id})" class="text-amber-600 hover:text-amber-800 font-semibold">Edit</button>
+                            <button onclick="deleteRecord('blockets', ${item.id})" class="text-rose-600 hover:text-rose-800 font-semibold">Delete</button>
+                        `}
                     </td>
                 </tr>
             `).join('');
@@ -1074,6 +1158,8 @@
                 tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">No sales recorded yet.</td></tr>`;
                 return;
             }
+
+            const isViewer = currentUserRole === 'viewer';
 
             const sorted = [...data].sort((a, b) => {
                 if ((b.date || '') !== (a.date || '')) {
@@ -1091,8 +1177,10 @@
                     <td class="p-3">$${(item.price || 0).toFixed(2)}</td>
                     <td class="p-3 font-bold text-slate-900">$${(item.total || 0).toFixed(2)}</td>
                     <td class="p-3 text-right space-x-2">
-                        <button onclick="editSale(${item.id})" class="text-amber-600 hover:text-amber-800 text-xs font-semibold">Edit</button>
-                        <button onclick="deleteRecord('sales', ${item.id})" class="text-rose-600 hover:text-rose-800 text-xs font-semibold">Delete</button>
+                        ${isViewer ? '<span class="text-xs text-slate-400 font-medium italic">Read-Only</span>' : `
+                            <button onclick="editSale(${item.id})" class="text-amber-600 hover:text-amber-800 text-xs font-semibold">Edit</button>
+                            <button onclick="deleteRecord('sales', ${item.id})" class="text-rose-600 hover:text-rose-800 text-xs font-semibold">Delete</button>
+                        `}
                     </td>
                 </tr>
             `).join('');
@@ -1109,6 +1197,8 @@
                 return;
             }
 
+            const isViewer = currentUserRole === 'viewer';
+
             const sorted = [...data].sort((a, b) => {
                 if ((b.date || '') !== (a.date || '')) {
                     return (b.date || '').localeCompare(a.date || '');
@@ -1124,8 +1214,10 @@
                     <td class="p-3">${item.supplier}</td>
                     <td class="p-3 font-bold text-slate-900">$${(item.cost || 0).toFixed(2)}</td>
                     <td class="p-3 text-right space-x-2">
-                        <button onclick="editPurchase(${item.id})" class="text-amber-600 hover:text-amber-800 text-xs font-semibold">Edit</button>
-                        <button onclick="deleteRecord('purchases', ${item.id})" class="text-rose-600 hover:text-rose-800 text-xs font-semibold">Delete</button>
+                        ${isViewer ? '<span class="text-xs text-slate-400 font-medium italic">Read-Only</span>' : `
+                            <button onclick="editPurchase(${item.id})" class="text-amber-600 hover:text-amber-800 text-xs font-semibold">Edit</button>
+                            <button onclick="deleteRecord('purchases', ${item.id})" class="text-rose-600 hover:text-rose-800 text-xs font-semibold">Delete</button>
+                        `}
                     </td>
                 </tr>
             `).join('');
@@ -1142,6 +1234,8 @@
                 return;
             }
 
+            const isViewer = currentUserRole === 'viewer';
+
             const sorted = [...data].sort((a, b) => {
                 if ((b.date || '') !== (a.date || '')) {
                     return (b.date || '').localeCompare(a.date || '');
@@ -1156,8 +1250,10 @@
                     <td class="p-3">${item.notes}</td>
                     <td class="p-3 font-bold text-slate-900">$${(item.amount || 0).toFixed(2)}</td>
                     <td class="p-3 text-right space-x-2">
-                        <button onclick="editExpense(${item.id})" class="text-amber-600 hover:text-amber-800 text-xs font-semibold">Edit</button>
-                        <button onclick="deleteRecord('expenses', ${item.id})" class="text-rose-600 hover:text-rose-800 text-xs font-semibold">Delete</button>
+                        ${isViewer ? '<span class="text-xs text-slate-400 font-medium italic">Read-Only</span>' : `
+                            <button onclick="editExpense(${item.id})" class="text-amber-600 hover:text-amber-800 text-xs font-semibold">Edit</button>
+                            <button onclick="deleteRecord('expenses', ${item.id})" class="text-rose-600 hover:text-rose-800 text-xs font-semibold">Delete</button>
+                        `}
                     </td>
                 </tr>
             `).join('');
@@ -1281,6 +1377,8 @@
                 return;
             }
 
+            const isViewer = currentUserRole === 'viewer';
+
             const sorted = [...filteredData].sort((a, b) => {
                 if ((b.date || '') !== (a.date || '')) {
                     return (b.date || '').localeCompare(a.date || '');
@@ -1296,8 +1394,10 @@
                     <td class="p-3 font-bold text-slate-900">$${(item.amount || 0).toFixed(2)}</td>
                     <td class="p-3 text-slate-500">${item.notes || '-'}</td>
                     <td class="p-3 text-right space-x-2">
-                        <button onclick="editLabor(${item.id})" class="text-amber-600 hover:text-amber-800 text-xs font-semibold">Edit</button>
-                        <button onclick="deleteRecord('labor_payments', ${item.id})" class="text-rose-600 hover:text-rose-800 text-xs font-semibold">Delete</button>
+                        ${isViewer ? '<span class="text-xs text-slate-400 font-medium italic">Read-Only</span>' : `
+                            <button onclick="editLabor(${item.id})" class="text-amber-600 hover:text-amber-800 text-xs font-semibold">Edit</button>
+                            <button onclick="deleteRecord('labor_payments', ${item.id})" class="text-rose-600 hover:text-rose-800 text-xs font-semibold">Delete</button>
+                        `}
                     </td>
                 </tr>
             `).join('');
