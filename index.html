@@ -150,6 +150,34 @@
                 </div>
             </div>
 
+            <!-- Total Blocks Produced Breakdown Card -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">Total Production Volume Breakdown (Net Produced)</h2>
+                        <p class="text-xs text-slate-500">Cumulative net blocks produced per size (10cm, 15cm, 20cm) across all production runs</p>
+                    </div>
+                    <span id="dash-prod-total-badge" class="px-3 py-1 bg-amber-100 text-amber-900 font-extrabold text-xs rounded-xl border border-amber-200">0 units produced total</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="p-4 bg-amber-50/50 rounded-xl border border-amber-200/60">
+                        <span class="text-xs font-bold text-amber-800 uppercase tracking-wider">10cm Blocks Produced</span>
+                        <h4 id="prod-10cm-total" class="text-3xl font-extrabold text-slate-900 mt-1">0</h4>
+                        <p class="text-[11px] text-slate-500 mt-1 font-medium">Cumulative net 10cm yield</p>
+                    </div>
+                    <div class="p-4 bg-amber-50/50 rounded-xl border border-amber-200/60">
+                        <span class="text-xs font-bold text-amber-800 uppercase tracking-wider">15cm Blocks Produced</span>
+                        <h4 id="prod-15cm-total" class="text-3xl font-extrabold text-slate-900 mt-1">0</h4>
+                        <p class="text-[11px] text-slate-500 mt-1 font-medium">Cumulative net 15cm yield</p>
+                    </div>
+                    <div class="p-4 bg-amber-50/50 rounded-xl border border-amber-200/60">
+                        <span class="text-xs font-bold text-amber-800 uppercase tracking-wider">20cm Blocks Produced</span>
+                        <h4 id="prod-20cm-total" class="text-3xl font-extrabold text-slate-900 mt-1">0</h4>
+                        <p class="text-[11px] text-slate-500 mt-1 font-medium">Cumulative net 20cm yield</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- Stock Inventory Overview -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                 <div class="flex justify-between items-center mb-4">
@@ -1102,10 +1130,22 @@
             const stock15 = (baseStock['15cm'] || 0) + prod15 - sold15;
             const stock20 = (baseStock['20cm'] || 0) + prod20 - sold20;
 
-            document.getElementById('stock-10cm').innerText = stock10;
-            document.getElementById('stock-15cm').innerText = stock15;
-            document.getElementById('stock-20cm').innerText = stock20;
-            document.getElementById('dash-blocks').innerText = (stock10 + stock15 + stock20) + " units";
+            document.getElementById('stock-10cm').innerText = stock10.toLocaleString();
+            document.getElementById('stock-15cm').innerText = stock15.toLocaleString();
+            document.getElementById('stock-20cm').innerText = stock20.toLocaleString();
+            document.getElementById('dash-blocks').innerText = (stock10 + stock15 + stock20).toLocaleString() + " units";
+
+            // Total Production Breakdown Card Updates
+            const totalProducedAll = prod10 + prod15 + prod20;
+            const p10 = document.getElementById('prod-10cm-total');
+            const p15 = document.getElementById('prod-15cm-total');
+            const p20 = document.getElementById('prod-20cm-total');
+            const pBadge = document.getElementById('dash-prod-total-badge');
+
+            if (p10) p10.innerText = prod10.toLocaleString();
+            if (p15) p15.innerText = prod15.toLocaleString();
+            if (p20) p20.innerText = prod20.toLocaleString();
+            if (pBadge) pBadge.innerText = totalProducedAll.toLocaleString() + " units total";
 
             let totalRev = 0;
             sales.forEach(s => totalRev += (s.total || 0));
