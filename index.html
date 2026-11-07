@@ -274,12 +274,59 @@
 
         <!-- PURCHASES VIEW -->
         <section id="view-purchases" class="hidden space-y-6">
-            <div class="flex justify-between items-center">
-                <h2 class="text-xl font-bold text-slate-900">Raw Material Procurement</h2>
-                <button onclick="openModal('purchaseModal')" class="action-btn bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-4 py-2 rounded-xl text-sm transition shadow-sm">+ Log Purchase</button>
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">Raw Material Procurement & Inventory</h2>
+                    <p class="text-xs text-slate-500">Track raw material purchases, daily usage, and live stock balances</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="openModal('usageModal')" class="action-btn bg-slate-800 hover:bg-slate-900 text-white font-semibold px-4 py-2 rounded-xl text-sm transition shadow-sm whitespace-nowrap">- Log Material Usage</button>
+                    <button onclick="openModal('purchaseModal')" class="action-btn bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-4 py-2 rounded-xl text-sm transition shadow-sm whitespace-nowrap">+ Log Purchase</button>
+                </div>
             </div>
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                <div class="overflow-x-auto">
+
+            <!-- Raw Material Stock Balance Summary Card -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900">Raw Material Stock Balance (Available = Total Purchased - Total Used)</h3>
+                        <p class="text-xs text-slate-500">Live inventory balances for essential block manufacturing raw materials</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Cement</span>
+                        <h4 id="mat-stock-cement" class="text-2xl font-bold text-slate-900 mt-1">0 Bags</h4>
+                        <p id="mat-sub-cement" class="text-[11px] text-slate-500 mt-1 font-medium">Purchased: 0 | Used: 0</p>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Pumice</span>
+                        <h4 id="mat-stock-pumice" class="text-2xl font-bold text-slate-900 mt-1">0 M³</h4>
+                        <p id="mat-sub-pumice" class="text-[11px] text-slate-500 mt-1 font-medium">Purchased: 0 | Used: 0</p>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Sand</span>
+                        <h4 id="mat-stock-sand" class="text-2xl font-bold text-slate-900 mt-1">0 M³</h4>
+                        <p id="mat-sub-sand" class="text-[11px] text-slate-500 mt-1 font-medium">Purchased: 0 | Used: 0</p>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Aggregate / Gravel</span>
+                        <h4 id="mat-stock-gravel" class="text-2xl font-bold text-slate-900 mt-1">0 M³</h4>
+                        <p id="mat-sub-gravel" class="text-[11px] text-slate-500 mt-1 font-medium">Purchased: 0 | Used: 0</p>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Water</span>
+                        <h4 id="mat-stock-water" class="text-2xl font-bold text-slate-900 mt-1">0 Litres</h4>
+                        <p id="mat-sub-water" class="text-[11px] text-slate-500 mt-1 font-medium">Purchased: 0 | Used: 0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Purchases History Table -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden p-6 space-y-3">
+                <h3 class="text-lg font-bold text-slate-900">Raw Material Procurement Transactions History</h3>
+                <div class="overflow-x-auto border border-slate-100 rounded-xl">
                     <table class="w-full text-left text-sm text-slate-600">
                         <thead class="bg-slate-100 text-slate-700 uppercase text-xs">
                             <tr>
@@ -293,6 +340,27 @@
                         </thead>
                         <tbody id="purchases-table-body" class="divide-y divide-slate-200">
                             <tr><td colspan="6" class="p-4 text-center text-slate-400">No raw material purchases recorded.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Material Daily Usage Ledger Table -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden p-6 space-y-3">
+                <h3 class="text-lg font-bold text-slate-900">Daily Material Consumption & Usage History</h3>
+                <div class="overflow-x-auto border border-slate-100 rounded-xl">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-slate-100 text-slate-700 uppercase text-xs">
+                            <tr>
+                                <th class="p-3">Date</th>
+                                <th class="p-3">Material Type</th>
+                                <th class="p-3">Quantity Used</th>
+                                <th class="p-3">Purpose / Notes</th>
+                                <th class="p-3 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usage-table-body" class="divide-y divide-slate-200">
+                            <tr><td colspan="5" class="p-4 text-center text-slate-400">No daily material usage recorded.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -478,6 +546,7 @@
         let globalPurchasesData = [];
         let globalExpensesData = [];
         let globalLaborData = [];
+        let globalUsageData = [];
 
         let defaultCrewList = ['Crew A', 'Crew B', 'Mr X', 'Mr Y'];
         let authMode = 'signin'; // 'signin' or 'signup'
@@ -862,6 +931,50 @@
                     </div>
                 `;
                 setTimeout(calculatePurchaseTotal, 50);
+            } else if (type === 'usageModal') {
+                title.innerText = currentEditingId ? "Edit Daily Material Usage" : "Log Daily Material Usage";
+                let item = {};
+                if (currentEditingId && globalUsageData) {
+                    item = globalUsageData.find(u => Number(u.id) === Number(currentEditingId)) || {};
+                }
+                content.innerHTML = `
+                    <div class="space-y-3">
+                        <div><label class="text-xs font-semibold text-slate-600">Date</label><input type="date" id="u-date" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.date || new Date().toISOString().split('T')[0]}"></div>
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600">Material Type</label>
+                            <select id="u-material" class="w-full mt-1 p-2 border rounded-xl text-sm">
+                                <option value="Cement" ${item.material === 'Cement' ? 'selected' : ''}>Cement</option>
+                                <option value="Pumice" ${item.material === 'Pumice' ? 'selected' : ''}>Pumice</option>
+                                <option value="Sand" ${item.material === 'Sand' ? 'selected' : ''}>Sand</option>
+                                <option value="Aggregate / Gravel" ${item.material === 'Aggregate / Gravel' ? 'selected' : ''}>Aggregate / Gravel</option>
+                                <option value="Water" ${item.material === 'Water' ? 'selected' : ''}>Water</option>
+                                <option value="Other" ${item.material === 'Other' ? 'selected' : ''}>Other / Custom</option>
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-xs font-semibold text-slate-600">Quantity Used</label>
+                                <input type="number" id="u-qty" step="0.01" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.qty ?? ''}" placeholder="0">
+                            </div>
+                            <div>
+                                <label class="text-xs font-semibold text-slate-600">Unit of Measurement</label>
+                                <select id="u-unit" class="w-full mt-1 p-2 border rounded-xl text-sm">
+                                    <option value="Bags" ${item.unit === 'Bags' ? 'selected' : ''}>Bags</option>
+                                    <option value="Pcs" ${item.unit === 'Pcs' ? 'selected' : ''}>Pcs (Pieces)</option>
+                                    <option value="Kuntal" ${item.unit === 'Kuntal' ? 'selected' : ''}>Kuntal (Quintal / 100kg)</option>
+                                    <option value="Tons" ${item.unit === 'Tons' ? 'selected' : ''}>Tons</option>
+                                    <option value="Kg" ${item.unit === 'Kg' ? 'selected' : ''}>Kg</option>
+                                    <option value="M³" ${item.unit === 'M³' ? 'selected' : ''}>M³ (Cubic Meters)</option>
+                                    <option value="Litres" ${item.unit === 'Litres' ? 'selected' : ''}>Litres</option>
+                                    <option value="Truckload / Trip" ${item.unit === 'Truckload / Trip' ? 'selected' : ''}>Truckload / Trip</option>
+                                    <option value="Units" ${item.unit === 'Units' ? 'selected' : ''}>Units</option>
+                                    <option value="Other" ${item.unit === 'Other' ? 'selected' : ''}>Other / Custom</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div><label class="text-xs font-semibold text-slate-600">Purpose / Notes</label><input type="text" id="u-notes" class="w-full mt-1 p-2 border rounded-xl text-sm" value="${item.notes || ''}" placeholder="Description / Production Batch #"></div>
+                    </div>
+                `;
             } else if (type === 'expenseModal') {
                 title.innerText = currentEditingId ? "Edit Operational Expense" : "Add Operational Expense";
                 let item = {};
@@ -911,6 +1024,7 @@
             if (tableName === 'productionModal') tableName = 'blockets';
             if (tableName === 'saleModal') tableName = 'sales';
             if (tableName === 'purchaseModal') tableName = 'purchases';
+            if (tableName === 'usageModal') tableName = 'material_usages';
             if (tableName === 'expenseModal') tableName = 'expenses';
             if (tableName === 'laborModal') tableName = 'labor_payments';
 
@@ -942,6 +1056,14 @@
                     unit: document.getElementById('pur-unit').value,
                     supplier: document.getElementById('pur-supp').value,
                     cost: Number(document.getElementById('pur-cost').value)
+                };
+            } else if (currentEditingStore === 'usageModal') {
+                obj = {
+                    date: document.getElementById('u-date').value,
+                    material: document.getElementById('u-material').value,
+                    qty: Number(document.getElementById('u-qty').value),
+                    unit: document.getElementById('u-unit').value,
+                    notes: document.getElementById('u-notes').value
                 };
             } else if (currentEditingStore === 'expenseModal') {
                 obj = {
@@ -1021,10 +1143,21 @@
                 globalExpensesData = expenses || [];
                 globalLaborData = labor || [];
 
+                // Fetch material usages safely if table exists
+                let usagesRes = { data: [] };
+                try {
+                    usagesRes = await supabaseClient.from('material_usages').select('*').order('date', { ascending: false }).order('id', { ascending: false });
+                } catch (e) {
+                    usagesRes = { data: [] };
+                }
+                globalUsageData = usagesRes.data || [];
+
                 renderDashboard(globalProductionData, globalSalesData, globalPurchasesData, globalExpensesData, globalLaborData);
                 renderProductionTable(globalProductionData);
                 renderSalesTable(globalSalesData);
                 renderPurchasesTable(globalPurchasesData);
+                renderMaterialStockBalanceCard(globalPurchasesData, globalUsageData);
+                renderUsageTable(globalUsageData);
                 renderExpensesTable(globalExpensesData);
                 renderLaborTable(globalLaborData);
                 renderLaborSummaryTable();
@@ -1032,6 +1165,85 @@
             } catch (err) {
                 console.error("Cloud fetch failed:", err);
             }
+        }
+
+        function renderMaterialStockBalanceCard(purchases, usages) {
+            const materials = [
+                { id: 'cement', name: 'Cement', defaultUnit: 'Bags' },
+                { id: 'pumice', name: 'Pumice', defaultUnit: 'M³' },
+                { id: 'sand', name: 'Sand', defaultUnit: 'M³' },
+                { id: 'gravel', name: 'Aggregate / Gravel', defaultUnit: 'M³' },
+                { id: 'water', name: 'Water', defaultUnit: 'Litres' }
+            ];
+
+            materials.forEach(mat => {
+                let purchasedQty = 0;
+                let usedQty = 0;
+                let unit = mat.defaultUnit;
+
+                (purchases || []).forEach(p => {
+                    if (p.material === mat.name || (mat.id === 'gravel' && (p.material || '').includes('Gravel'))) {
+                        purchasedQty += Number(p.qty || 0);
+                        if (p.unit) unit = p.unit;
+                    }
+                });
+
+                (usages || []).forEach(u => {
+                    if (u.material === mat.name || (mat.id === 'gravel' && (u.material || '').includes('Gravel'))) {
+                        usedQty += Number(u.qty || 0);
+                        if (u.unit) unit = u.unit;
+                    }
+                });
+
+                const balance = purchasedQty - usedQty;
+
+                const stockEl = document.getElementById(`mat-stock-${mat.id}`);
+                const subEl = document.getElementById(`mat-sub-${mat.id}`);
+
+                if (stockEl) {
+                    stockEl.innerText = `${balance.toLocaleString()} ${unit}`;
+                }
+                if (subEl) {
+                    subEl.innerText = `Purchased: ${purchasedQty.toLocaleString()} | Used: ${usedQty.toLocaleString()}`;
+                }
+            });
+        }
+
+        function renderUsageTable(data) {
+            const tbody = document.getElementById('usage-table-body');
+            if (!tbody) return;
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">No daily material usage recorded.</td></tr>`;
+                return;
+            }
+
+            const isViewer = currentUserRole === 'viewer';
+
+            const sorted = [...data].sort((a, b) => {
+                if ((b.date || '') !== (a.date || '')) {
+                    return (b.date || '').localeCompare(a.date || '');
+                }
+                return Number(b.id || 0) - Number(a.id || 0);
+            });
+
+            tbody.innerHTML = sorted.map(item => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3">${item.date}</td>
+                    <td class="p-3 font-medium text-slate-900">${item.material}</td>
+                    <td class="p-3 font-semibold text-rose-700">${item.qty} ${item.unit || ''}</td>
+                    <td class="p-3 text-slate-500">${item.notes || '-'}</td>
+                    <td class="p-3 text-right space-x-2">
+                        ${isViewer ? '<span class="text-xs text-slate-400 font-medium italic">Read-Only</span>' : `
+                            <button onclick="editUsage(${item.id})" class="text-amber-600 hover:text-amber-800 text-xs font-semibold">Edit</button>
+                            <button onclick="deleteRecord('material_usages', ${item.id})" class="text-rose-600 hover:text-rose-800 text-xs font-semibold">Delete</button>
+                        `}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function editUsage(id) {
+            openModal('usageModal', id);
         }
 
         function setLaborRate(val) {
