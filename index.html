@@ -1093,7 +1093,11 @@
                     closeModal();
                     loadAllData();
                 } catch (err) {
-                    alert("Error updating record: " + err.message);
+                    if (err.message && err.message.includes('material_usages')) {
+                        alert("Database Table Setup Required:\n\nPlease run the provided SQL script in your Supabase SQL Editor to create the 'material_usages' table.\n\nError details: " + err.message);
+                    } else {
+                        alert("Error updating record: " + err.message);
+                    }
                 }
             } else {
                 try {
@@ -1102,7 +1106,11 @@
                     closeModal();
                     loadAllData();
                 } catch (err) {
-                    alert("Error saving record: " + err.message);
+                    if (err.message && err.message.includes('material_usages')) {
+                        alert("Database Table Setup Required:\n\nPlease run the provided SQL script in your Supabase SQL Editor to create the 'material_usages' table.\n\nError details: " + err.message);
+                    } else {
+                        alert("Error saving record: " + err.message);
+                    }
                 }
             }
         }
